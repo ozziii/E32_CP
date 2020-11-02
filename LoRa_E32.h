@@ -1,4 +1,10 @@
-/*
+/*   
+
+
+EDITE BY OZIIII
+
+
+
  * EBYTE LoRa E32 Series
  *
  * AUTHOR:  Renzo Mischianti
