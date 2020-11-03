@@ -1,17 +1,7 @@
 /*   
-
-
-EDITE BY OZIIII
-
-
-fddfdf
-
-S
-
-
  * EBYTE LoRa E32 Series
  *
- * AUTHOR:  Renzo Mischianti
+ * AUTHOR:  Renzo Mischianti   Edited by OZIIII
  * VERSION: 1.0.0
  *
  * https://www.mischianti.org/category/my-libraries/lora-e32-devices/
@@ -43,6 +33,9 @@ S
  */
 #ifndef LoRa_E32_h
 #define LoRa_E32_h
+
+
+#define E32_LOOP_DELAY 200
 
 #ifndef ESP32
 	#define ACTIVATE_SOFTWARE_SERIAL
@@ -182,12 +175,7 @@ struct ResponseContainer {
 	String data;
 	ResponseStatus status;
 };
-//struct FixedStransmission {
-//		byte ADDL = 0;
-//		byte ADDH = 0;
-//		byte CHAN = 0;
-//		void *message;
-//};
+
 #pragma pack(pop)
 
 class LoRa_E32 {
@@ -214,11 +202,8 @@ class LoRa_E32 {
 			LoRa_E32(SoftwareSerial* serial, byte auxPin, byte m0Pin, byte m1Pin, UART_BPS_RATE bpsRate = UART_BPS_RATE_9600);
 		#endif
 
-//		LoRa_E32(byte txE32pin, byte rxE32pin, UART_BPS_RATE bpsRate = UART_BPS_RATE_9600, MODE_TYPE mode = MODE_0_NORMAL);
-//		LoRa_E32(HardwareSerial* serial = &Serial, UART_BPS_RATE bpsRate = UART_BPS_RATE_9600, MODE_TYPE mode = MODE_0_NORMAL);
-//		LoRa_E32(SoftwareSerial* serial, UART_BPS_RATE bpsRate = UART_BPS_RATE_9600, MODE_TYPE mode = MODE_0_NORMAL);
-
 		bool begin();
+
         Status setMode(MODE_TYPE mode);
         MODE_TYPE getMode();
 
@@ -234,6 +219,8 @@ class LoRa_E32 {
         ResponseStatus sendMessage(const String message);
         ResponseContainer receiveMessage();
 
+		ResponseContainer waitForReceiveMessage(unsigned long millis);
+
         ResponseStatus sendFixedMessage(byte ADDH,byte ADDL, byte CHAN, const String message);
         ResponseStatus sendBroadcastFixedMessage(byte CHAN, const String message);
 
@@ -243,7 +230,11 @@ class LoRa_E32 {
         ResponseContainer receiveInitialMessage(const uint8_t size);
         ResponseContainer receiveMessageUntil(char delimiter = '\0');
 
-        int available(unsigned long timeout = 1000);
+        int available();
+
+
+
+
 	private:
 		HardwareSerial* hs;
 
@@ -280,14 +271,6 @@ class LoRa_E32 {
   		  }
 
 #ifdef HARDWARE_SERIAL_SELECTABLE_PIN
-//		  template< typename T >
-//		  void begin( T &t, int baud, SerialConfig config ){
-//			  DEBUG_PRINTLN("Begin ");
-//			  t.setTimeout(500);
-//			  t.begin(baud, config);
-//			  stream = &t;
-//		  }
-//
 		  template< typename T >
 		  void begin( T &t, int baud, uint32_t config ){
 			  DEBUG_PRINTLN("Begin ");
