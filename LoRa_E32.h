@@ -219,7 +219,7 @@ class LoRa_E32 {
         ResponseStatus sendMessage(const String message);
         ResponseContainer receiveMessage();
 
-		ResponseContainer waitForReceiveMessage(unsigned long millis);
+		ResponseContainer waitForReceiveMessage(unsigned long ms);
 
         ResponseStatus sendFixedMessage(byte ADDH,byte ADDL, byte CHAN, const String message);
         ResponseStatus sendBroadcastFixedMessage(byte CHAN, const String message);
