@@ -784,9 +784,9 @@ ResponseStructContainer LoRa_E32::receiveMessage(const uint8_t size)
 
 ResponseContainer LoRa_E32::waitForReceiveMessage(unsigned long millis)
 {
-	ResponseContainer rc
+	ResponseContainer rc;
 
-		unsigned long time_to_stop = millis() + millis;
+	unsigned long time_to_stop = millis() + millis;
 
 	while (time_to_stop > millis())
 	{
