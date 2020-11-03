@@ -747,9 +747,9 @@ ResponseContainer LoRa_E32::receiveMessage()
 	this->cleanUARTBuffer();
 
 	if (rc.data == NULL)
-		rc.status = ERR_E32_UNKNOWN;
+		rc.status.code = ERR_E32_UNKNOWN;
 	else
-		rc.status = SUCCESS;
+		rc.status.code = SUCCESS;
 
 	return rc;
 }
@@ -760,9 +760,9 @@ ResponseContainer LoRa_E32::receiveMessageUntil(char delimiter)
 	rc.data = this->serialDef.stream->readStringUntil(delimiter);
 
 	if (rc.data == NULL)
-		rc.status = ERR_E32_UNKNOWN;
+		rc.status.code = ERR_E32_UNKNOWN;
 	else
-		rc.status = SUCCESS;
+		rc.status.code = SUCCESS;
 
 	return rc;
 }
