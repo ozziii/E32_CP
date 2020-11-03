@@ -798,7 +798,7 @@ ResponseContainer LoRa_E32::waitForReceiveMessage(unsigned long millis)
 		this->managedDelay(E32_LOOP_DELAY);
 	}
 
-	rc.status = ERR_E32_TIMEOUT;
+	rc.status.code = ERR_E32_TIMEOUT;
 	return rc;
 }
 
