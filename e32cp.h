@@ -1,0 +1,137 @@
+/*   
+ * E32 COMUNICATION PROTOCOL
+ *
+ * AUTHOR:  OZIIII
+ * VERSION: 1.0.0
+ *
+ * The MIT License (MIT)
+ *
+ * You may copy, alter and reuse this code in any way you like, but please leave
+ * reference to www.mischianti.org in your comments if you redistribute this code.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+#ifndef E32CP_h
+#define E32CP_h
+
+
+
+#if ARDUINO >= 100
+#include "Arduino.h"
+#else
+#include "WProgram.h"
+#endif
+
+#include <functional>
+
+#include <AES.h>
+
+#include <LoRa_E32.h>
+
+#define E32_SERVER_ADDRESS 1
+#define E32_SERVER_CHANNEL 1
+
+#define E32_WAKE_COMMAND "wake"
+
+#define E32_HANDUP_COMMAND "handup"
+
+#define E32_WAKE_DELAY 3000
+
+#define E32_PSKEY "0123456789ABCDEF"  // 16 char
+
+
+typedef std::function<void(String payload)> OnE32ReciveMessage;
+
+
+class e32cp 
+{
+    public:
+        /**
+         * Client CTOR
+         * 
+         * 
+         * 
+         */ 
+        e32cp(LoRa_E32 * lora,uint16_t address,uint8_t channel);
+
+
+        /**
+         * Server CTOR
+         * 
+         * 
+         * 
+         */
+        e32cp(LoRa_E32 * lora,OnE32ReciveMessage callback);
+
+        /**
+         * 
+         */
+        void begin();
+    
+        /**
+         * Send command to sleppy client
+         * Send Wake --> wait for Key --> Send Payload 
+         * 
+         * 
+         * 
+         * 
+         */
+        bool sleepyWake(uint16_t address,uint8_t channel,String payload);
+
+
+        /**
+         * sleppy client  recive command
+         * After wake -->  Send key --> wait for payload
+         * 
+         * 
+         * 
+         * 
+         */
+        String sleepyIsWake();
+
+
+        /**
+         * Sensor client send data
+         * Send Request --> wait for key --> send data
+         * 
+         * 
+         * 
+         * 
+         */ 
+        bool sensorSend(String payload);
+
+
+
+    private:
+        uint8_t _haddress,_laddress,_channel;
+        String _shared_key = "Test";
+        LoRa_E32 * _lora;
+        OnE32ReciveMessage _callback;
+
+        AES * _aes;
+
+        String OneTimePassword();
+        String decript(String data,String Key);
+        String encript(String data,String Key);
+
+        
+};
+
+#endif

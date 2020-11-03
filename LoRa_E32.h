@@ -255,10 +255,6 @@ class LoRa_E32 {
         int8_t m0Pin = -1;
         int8_t m1Pin = -1;
 
-        unsigned long halfKeyloqKey = 0x06660708;
-        unsigned long encrypt(unsigned long data);
-        unsigned long decrypt(unsigned long data);
-
         UART_BPS_RATE bpsRate = UART_BPS_RATE_9600;
 
 		struct NeedsStream{
