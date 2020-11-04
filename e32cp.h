@@ -83,7 +83,7 @@ class e32cp
 
 
         /**
-         * 
+         *   MAKE ASYCRONUS URAT FUNCTION ONLY FOR HARDWARE SERIAL
          * 
          * 
          */
@@ -154,7 +154,6 @@ class e32cp
         String decript(String data,String Key);
         String encript(String data,String Key);
 };
-
 
 
 static e32cp * E32Self;

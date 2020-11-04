@@ -88,7 +88,6 @@ bool e32cp::sensorSend(String payload)
 
 }
 
-
 void e32cp::loop()
 {
     if(this->_lora->available())
