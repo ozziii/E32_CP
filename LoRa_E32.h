@@ -56,7 +56,11 @@
 #include "WProgram.h"
 #endif
 
+#include <functional>
+
 #define MAX_SIZE_TX_PACKET 58
+
+
 
 // Uncomment to enable printing out nice debug messages.
 // #define LoRa_E32_DEBUG
@@ -232,8 +236,7 @@ class LoRa_E32 {
 
         int available();
 
-
-
+		
 
 	private:
 		HardwareSerial* hs;
@@ -309,6 +312,8 @@ class LoRa_E32 {
 #ifdef LoRa_E32_DEBUG
         void printParameters(struct Configuration *configuration);
 #endif
+
+
 };
 
 #endif

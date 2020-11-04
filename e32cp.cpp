@@ -9,14 +9,13 @@ e32cp::e32cp(LoRa_E32 * lora, uint16_t address, uint8_t channel)
     this->_channel = channel;
 }
 
-e32cp::e32cp(LoRa_E32  * lora, OnE32ReciveMessage callback)
+void e32cp::attachInterrupt(uart_port_t uart_number,OnE32ReciveMessage callback,e32cp * self)
 {
-    this->_aes = new AES(128);
-    this->_laddress = E32_SERVER_ADDRESS;
-    this->_haddress = 0;
-    this->_channel = E32_SERVER_CHANNEL;
-    this->_lora = lora;
-    this->_callback = callback;
+    E32Self = self;
+    e32_function_callback = callback;
+
+    uart_isr_register(uart_number,e32_uart_intr_handle, NULL, ESP_INTR_FLAG_LOWMED, e32_handle_console);
+    uart_enable_rx_intr(uart_number);
 }
 
 void e32cp::begin()
@@ -89,6 +88,18 @@ bool e32cp::sensorSend(String payload)
 
 }
 
+
+void e32cp::loop()
+{
+    if(this->_lora->available())
+    {
+        ResponseContainer rc =  this->_lora->receiveMessage();
+
+        if(rc.status.code == SUCCESS)
+            e32_function_callback(rc.data);
+    }
+} 
+
 String e32cp::OneTimePassword() 
 { 
     char newKey[16];
@@ -103,18 +114,13 @@ String e32cp::OneTimePassword()
 
 String e32cp::decript(String data, String Key)
 { 
-    unsigned char* udata = reinterpret_cast<unsigned char*>(const_cast<char*>(data.c_str()));
-    unsigned char* ukey = reinterpret_cast<unsigned char*>(const_cast<char*>(Key.c_str()));
-    unsigned char * result =  _aes->DecryptECB(udata,data.length(),ukey);
-    return String(reinterpret_cast< char const* >(result));
+    char* result = _aes->DecryptECB((char*)data.c_str(),data.length(),(char*)Key.c_str());
+    return String(result);
 }
-
 
 String e32cp::encript(String data, String Key)
 { 
-    unsigned char* udata = reinterpret_cast<unsigned char*>(const_cast<char*>(data.c_str()));
-    unsigned char* ukey = reinterpret_cast<unsigned char*>(const_cast<char*>(Key.c_str()));
     unsigned int out_len = 0;
-    unsigned char * result =  _aes->EncryptECB(udata,data.length(),ukey,out_len);
-    return String(reinterpret_cast< char const* >(result));
+    char * result =  _aes->EncryptECB((char*)data.c_str(),data.length(),(char*)Key.c_str(),out_len);
+    return String(result);
 }

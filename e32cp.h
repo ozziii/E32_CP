@@ -57,8 +57,18 @@
 #define E32_PSKEY "0123456789ABCDEF"  // 16 char
 
 
-typedef std::function<void(String payload)> OnE32ReciveMessage;
 
+typedef std::function<void(String Payload)> OnE32ReciveMessage;
+
+// COMMENT 
+#define ASYNC_E32
+
+#ifdef ASYNC_E32
+#include "driver/uart.h"
+
+static void IRAM_ATTR e32_uart_intr_handle(void *);
+static uart_isr_handle_t * e32_handle_console;
+#endif
 
 class e32cp 
 {
@@ -69,16 +79,16 @@ class e32cp
          * 
          * 
          */ 
-        e32cp(LoRa_E32 * lora,uint16_t address,uint8_t channel);
+        e32cp(LoRa_E32 * lora,uint16_t address = E32_SERVER_ADDRESS,uint8_t channel = E32_SERVER_CHANNEL);
 
 
         /**
-         * Server CTOR
          * 
          * 
          * 
          */
-        e32cp(LoRa_E32 * lora,OnE32ReciveMessage callback);
+        void attachInterrupt(uart_port_t uart_number, OnE32ReciveMessage callback,e32cp * self);
+
 
         /**
          * 
@@ -117,21 +127,43 @@ class e32cp
          */ 
         bool sensorSend(String payload);
 
+        /**
+         * 
+         * 
+         * 
+         */
+        String ServerRecieve();
 
+        /**
+         * 
+         * 
+         * 
+         * 
+         * 
+         */
+        void loop(); 
 
     private:
         uint8_t _haddress,_laddress,_channel;
         String _shared_key = "Test";
         LoRa_E32 * _lora;
-        OnE32ReciveMessage _callback;
 
         AES * _aes;
 
         String OneTimePassword();
         String decript(String data,String Key);
         String encript(String data,String Key);
-
-        
 };
+
+
+
+static e32cp * E32Self;
+static OnE32ReciveMessage e32_function_callback;
+
+static void IRAM_ATTR e32_uart_intr_handle(void *)
+{
+    String result =  E32Self->ServerRecieve();
+    e32_function_callback(result);
+}
 
 #endif

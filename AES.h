@@ -16,69 +16,69 @@ private:
 
   unsigned int blockBytesLen;
 
-  void SubBytes(unsigned char **state);
+  void SubBytes(char **state);
 
-  void ShiftRow(unsigned char **state, int i, int n);    // shift row i on n positions
+  void ShiftRow(char **state, int i, int n);    // shift row i on n positions
 
-  void ShiftRows(unsigned char **state);
+  void ShiftRows(char **state);
 
-  unsigned char xtime(unsigned char b);    // multiply on x
+  char xtime(char b);    // multiply on x
 
-  unsigned char mul_bytes(unsigned char a, unsigned char b);
+  char mul_bytes(char a, char b);
 
-  void MixColumns(unsigned char **state);
+  void MixColumns(char **state);
 
-  void MixSingleColumn(unsigned char *r);
+  void MixSingleColumn(char *r);
 
-  void AddRoundKey(unsigned char **state, unsigned char *key);
+  void AddRoundKey(char **state, char *key);
 
-  void SubWord(unsigned char *a);
+  void SubWord(char *a);
 
-  void RotWord(unsigned char *a);
+  void RotWord(char *a);
 
-  void XorWords(unsigned char *a, unsigned char *b, unsigned char *c);
+  void XorWords(char *a, char *b, char *c);
 
-  void Rcon(unsigned char * a, int n);
+  void Rcon(char * a, int n);
 
-  void InvSubBytes(unsigned char **state);
+  void InvSubBytes(char **state);
 
-  void InvMixColumns(unsigned char **state);
+  void InvMixColumns(char **state);
 
-  void InvShiftRows(unsigned char **state);
+  void InvShiftRows(char **state);
 
-  unsigned char* PaddingNulls(unsigned char in[], unsigned int inLen, unsigned int alignLen);
+  char* PaddingNulls(char in[], unsigned int inLen, unsigned int alignLen);
   
   unsigned int GetPaddingLength(unsigned int len);
 
-  void KeyExpansion(unsigned char key[], unsigned char w[]);
+  void KeyExpansion(char key[], char w[]);
 
-  void EncryptBlock(unsigned char in[], unsigned char out[], unsigned  char key[]);
+  void EncryptBlock(char in[], char out[], char key[]);
 
-  void DecryptBlock(unsigned char in[], unsigned char out[], unsigned  char key[]);
+  void DecryptBlock(char in[], char out[], char key[]);
 
-  void XorBlocks(unsigned char *a, unsigned char * b, unsigned char *c, unsigned int len);
+  void XorBlocks(char *a, char * b, char *c, unsigned int len);
 
 public:
   AES(int keyLen = 256);
 
-  unsigned char *EncryptECB(unsigned char in[], unsigned int inLen, unsigned  char key[], unsigned int &outLen);
+  char * EncryptECB(char in[], unsigned int inLen, char key[], unsigned int &outLen);
 
-  unsigned char *DecryptECB(unsigned char in[], unsigned int inLen, unsigned  char key[]);
+  char * DecryptECB(char in[], unsigned int inLen, char key[]);
 
-  unsigned char *EncryptCBC(unsigned char in[], unsigned int inLen, unsigned  char key[], unsigned char * iv, unsigned int &outLen);
+  char * EncryptCBC(char in[], unsigned int inLen, char key[], char * iv, unsigned int &outLen);
 
-  unsigned char *DecryptCBC(unsigned char in[], unsigned int inLen, unsigned  char key[], unsigned char * iv);
+  char * DecryptCBC(char in[], unsigned int inLen, char key[], char * iv);
 
-  unsigned char *EncryptCFB(unsigned char in[], unsigned int inLen, unsigned  char key[], unsigned char * iv, unsigned int &outLen);
+  char * EncryptCFB(char in[], unsigned int inLen, char key[], char * iv, unsigned int &outLen);
 
-  unsigned char *DecryptCFB(unsigned char in[], unsigned int inLen, unsigned  char key[], unsigned char * iv);
+  char * DecryptCFB(char in[], unsigned int inLen, char key[], char * iv);
   
-  void printHexArray (unsigned char a[], unsigned int n);
+  void printHexArray (char a[], unsigned int n);
 
 
 };
 
-const unsigned char sbox[16][16] = {
+const char sbox[16][16] = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5,
     0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0,
@@ -113,7 +113,7 @@ const unsigned char sbox[16][16] = {
     0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
   };
 
-const unsigned char inv_sbox[16][16] = {
+const char inv_sbox[16][16] = {
     0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38,
     0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
     0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87,
