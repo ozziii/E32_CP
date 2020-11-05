@@ -26,26 +26,29 @@ void e32cp::begin()
 bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 {
     this->_lora->setMode(MODE_1_WAKE_UP);
+
     uint8_t addL = (uint8_t)(address & 0xff);
     uint8_t addH = (uint8_t)((address >> 8) & 0xff);
+
     ResponseStatus rs =  this->_lora->sendFixedMessage(addH,addL,channel,E32_WAKE_COMMAND);
 
-    if(rs.code != SUCCESS ) return false;
+    if(rs.code != ERR_E32_SUCCESS ) return false;
 
     this->_lora->setMode(MODE_0_NORMAL);
 
-    ResponseContainer CriptedKey = this->_lora->waitForReceiveMessage(E32_WAKE_DELAY);
+    RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
-    if(CriptedKey.status.code != SUCCESS) return false;
+    if(CriptedKey.status.code != ERR_E32_SUCCESS) return false;
     if(CriptedKey.data == NULL) return false;
 
-    String oneTimeKey = this->decript(CriptedKey.data,E32_PSKEY);
+    uint8_t * oneTimeKey = this->_aes->DecryptECB(CriptedKey.data,CriptedKey.length,E32_PSKEY);
 
-    String massage = this->encript(payload,oneTimeKey);
+    unsigned int out_len;
+    uint8_t * massage = this->_aes->EncryptECB((uint8_t *)payload.c_str(),payload.length(),oneTimeKey,out_len);
 
-    rs = this->_lora->sendFixedMessage(addH,addL,channel,massage);
+    rs = this->_lora->sendFixedMessage(addH,addL,channel,(void*)massage,(uint8_t)out_len);
 
-    if(rs.code == SUCCESS )
+    if(rs.code == ERR_E32_SUCCESS )
         return true;
     else
         return false;
@@ -54,34 +57,42 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 String e32cp::sleepyIsWake()
 {
     this->_lora->setMode(MODE_0_NORMAL);
-    String oneTimeKey = this->OneTimePassword();
-    String CriptOneTimeKey = this->encript(oneTimeKey,E32_PSKEY);
-    ResponseStatus rs =  this->_lora->sendFixedMessage(0,E32_SERVER_ADDRESS,E32_SERVER_CHANNEL,CriptOneTimeKey);
+    uint8_t * oneTimeKey = this->OneTimePassword();
+    unsigned int out_len;
+    uint8_t * CriptOneTimeKey = this->_aes->EncryptECB(oneTimeKey,E32_KEY_LENGTH,E32_PSKEY,out_len);
 
-    if(rs.code != SUCCESS ) return String();
+    ResponseStatus rs =  this->_lora->sendFixedMessage(0,E32_SERVER_ADDRESS,E32_SERVER_CHANNEL,CriptOneTimeKey,(uint8_t)out_len);
 
-    ResponseContainer CriptMessage = this->_lora->waitForReceiveMessage(E32_WAKE_DELAY);
+    if(rs.code != ERR_E32_SUCCESS ) return String();
 
-    if(CriptMessage.status.code != SUCCESS ) return String();
+    RawResponseContainer CriptMessage = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
-    return decript(CriptMessage.data,oneTimeKey);
+    if(CriptMessage.status.code != ERR_E32_SUCCESS ) return String();
+
+    uint8_t * message = this->_aes->DecryptECB(CriptMessage.data,CriptMessage.length,oneTimeKey);
+
+    return String((char *)message);
 }
 
 bool e32cp::sensorSend(String payload)
 {
     this->_lora->setMode(MODE_0_NORMAL);
     ResponseStatus rs =  this->_lora->sendFixedMessage(0,E32_SERVER_ADDRESS,E32_SERVER_CHANNEL,E32_HANDUP_COMMAND);
-    if(rs.code != SUCCESS ) return false;
+    if(rs.code != ERR_E32_SUCCESS ) return false;
 
-    ResponseContainer CriptedKey = this->_lora->waitForReceiveMessage(E32_WAKE_DELAY);
-    if(CriptedKey.status.code != SUCCESS) return false;
+    RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
+    if(CriptedKey.status.code != ERR_E32_SUCCESS) return false;
     if(CriptedKey.data == NULL) return false;
 
-    String oneTimeKey = this->decript(CriptedKey.data,E32_PSKEY);
-    String massage = this->encript(payload,oneTimeKey);
-    rs = this->_lora->sendFixedMessage(0,E32_SERVER_ADDRESS,E32_SERVER_CHANNEL,massage);
+    uint8_t * oneTimeKey = this->_aes->DecryptECB(CriptedKey.data,CriptedKey.length,E32_PSKEY);
 
-    if(rs.code == SUCCESS )
+    unsigned int out_len;
+    uint8_t * cript_massage = this->_aes->EncryptECB((uint8_t *)payload.c_str(),payload.length(),oneTimeKey,out_len);
+
+    
+    rs = this->_lora->sendFixedMessage(0,E32_SERVER_ADDRESS,E32_SERVER_CHANNEL,cript_massage,(uint8_t)out_len);
+
+    if(rs.code == ERR_E32_SUCCESS )
         return true;
     else
         return false;
@@ -94,32 +105,19 @@ void e32cp::loop()
     {
         ResponseContainer rc =  this->_lora->receiveMessage();
 
-        if(rc.status.code == SUCCESS)
+        if(rc.status.code == ERR_E32_SUCCESS)
             e32_function_callback(rc.data);
     }
 } 
 
-String e32cp::OneTimePassword() 
+uint8_t * e32cp::OneTimePassword() 
 { 
-    char newKey[16];
+    uint8_t * newKey = (uint8_t * )malloc(E32_KEY_LENGTH);
 
-    for(int i = 0 ; i< 16 ; i++)
+    for(int i = 0 ; i< E32_KEY_LENGTH ; i++)
     {
-        newKey[i] = esp_random();
+        newKey[i] = (uint8_t)esp_random();
     }
 
-    return String(newKey);
-}
-
-String e32cp::decript(String data, String Key)
-{ 
-    char* result = _aes->DecryptECB((char*)data.c_str(),data.length(),(char*)Key.c_str());
-    return String(result);
-}
-
-String e32cp::encript(String data, String Key)
-{ 
-    unsigned int out_len = 0;
-    char * result =  _aes->EncryptECB((char*)data.c_str(),data.length(),(char*)Key.c_str(),out_len);
-    return String(result);
+    return newKey;
 }

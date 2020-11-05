@@ -60,6 +60,8 @@
 
 #define MAX_SIZE_TX_PACKET 58
 
+#define MAX_SIZE_RX_PACKET_SIZE 128
+
 
 
 // Uncomment to enable printing out nice debug messages.
@@ -180,6 +182,13 @@ struct ResponseContainer {
 	ResponseStatus status;
 };
 
+struct RawResponseContainer
+{
+	uint8_t * data;
+	size_t length;
+	ResponseStatus status;
+};
+
 #pragma pack(pop)
 
 class LoRa_E32 {
@@ -223,12 +232,13 @@ class LoRa_E32 {
         ResponseStatus sendMessage(const String message);
         ResponseContainer receiveMessage();
 
-		ResponseContainer waitForReceiveMessage(unsigned long ms);
+		RawResponseContainer receiveRawMessage();
+		RawResponseContainer waitForReceiveRawMessage(unsigned long ms);
 
         ResponseStatus sendFixedMessage(byte ADDH,byte ADDL, byte CHAN, const String message);
         ResponseStatus sendBroadcastFixedMessage(byte CHAN, const String message);
 
-        ResponseStatus sendFixedMessage(byte ADDH,byte ADDL, byte CHAN, const void *message, const uint8_t size);
+        ResponseStatus sendFixedMessage(byte ADDH,byte ADDL, byte CHAN, const void *message, const size_t size);
         ResponseStatus sendBroadcastFixedMessage(byte CHAN, const void *message, const uint8_t size );
 
         ResponseContainer receiveInitialMessage(const uint8_t size);
@@ -306,6 +316,10 @@ class LoRa_E32 {
         Status sendStruct(void *structureManaged, uint16_t size_);
         Status receiveStruct(void *structureManaged, uint16_t size_);
         void writeProgramCommand(PROGRAM_COMMAND cmd);
+
+		int timedRead();
+
+		unsigned long _startMillis,_timeout;
 
         RESPONSE_STATUS checkUARTConfiguration(MODE_TYPE mode);
 

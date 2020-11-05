@@ -21,15 +21,15 @@ AES::AES(int keyLen)
     throw "Incorrect key length";
   }
 
-  blockBytesLen = 4 * this->Nb * sizeof(char);
+  blockBytesLen = 4 * this->Nb * sizeof(uint8_t);
 }
 
-char * AES::EncryptECB(char in[], unsigned int inLen, char key[], unsigned int &outLen)
+uint8_t * AES::EncryptECB(uint8_t in[], unsigned int inLen, uint8_t key[], unsigned int &outLen)
 {
   outLen = GetPaddingLength(inLen);
-  char *alignIn  = PaddingNulls(in, inLen, outLen);
-  char *out = new char[outLen];
-  char *roundKeys = new char[4 * Nb * (Nr + 1)];
+  uint8_t *alignIn  = PaddingNulls(in, inLen, outLen);
+  uint8_t *out = new uint8_t[outLen];
+  uint8_t *roundKeys = new uint8_t[4 * Nb * (Nr + 1)];
   KeyExpansion(key, roundKeys);
   for (unsigned int i = 0; i < outLen; i+= blockBytesLen)
   {
@@ -42,10 +42,10 @@ char * AES::EncryptECB(char in[], unsigned int inLen, char key[], unsigned int &
   return out;
 }
 
-char * AES::DecryptECB(char in[], unsigned int inLen, char key[])
+uint8_t * AES::DecryptECB(uint8_t in[], unsigned int inLen, uint8_t key[])
 {
-  char *out = new char[inLen];
-  char *roundKeys = new char[4 * Nb * (Nr + 1)];
+  uint8_t *out = new uint8_t[inLen];
+  uint8_t *roundKeys = new uint8_t[4 * Nb * (Nr + 1)];
   KeyExpansion(key, roundKeys);
   for (unsigned int i = 0; i < inLen; i+= blockBytesLen)
   {
@@ -58,13 +58,13 @@ char * AES::DecryptECB(char in[], unsigned int inLen, char key[])
 }
 
 
-char *AES::EncryptCBC(char in[], unsigned int inLen, char key[], char * iv, unsigned int &outLen)
+uint8_t *AES::EncryptCBC(uint8_t in[], unsigned int inLen, uint8_t key[], uint8_t * iv, unsigned int &outLen)
 {
   outLen = GetPaddingLength(inLen);
-  char *alignIn  = PaddingNulls(in, inLen, outLen);
-  char *out = new char[outLen];
-  char *block = new char[blockBytesLen];
-  char *roundKeys = new char[4 * Nb * (Nr + 1)];
+  uint8_t *alignIn  = PaddingNulls(in, inLen, outLen);
+  uint8_t *out = new uint8_t[outLen];
+  uint8_t *block = new uint8_t[blockBytesLen];
+  uint8_t *roundKeys = new uint8_t[4 * Nb * (Nr + 1)];
   KeyExpansion(key, roundKeys);
   memcpy(block, iv, blockBytesLen);
   for (unsigned int i = 0; i < outLen; i+= blockBytesLen)
@@ -81,11 +81,11 @@ char *AES::EncryptCBC(char in[], unsigned int inLen, char key[], char * iv, unsi
   return out;
 }
 
-char *AES::DecryptCBC(char in[], unsigned int inLen, char key[], char * iv)
+uint8_t *AES::DecryptCBC(uint8_t in[], unsigned int inLen, uint8_t key[], uint8_t * iv)
 {
-  char *out = new char[inLen];
-  char *block = new char[blockBytesLen];
-  char *roundKeys = new char[4 * Nb * (Nr + 1)];
+  uint8_t *out = new uint8_t[inLen];
+  uint8_t *block = new uint8_t[blockBytesLen];
+  uint8_t *roundKeys = new uint8_t[4 * Nb * (Nr + 1)];
   KeyExpansion(key, roundKeys);
   memcpy(block, iv, blockBytesLen);
   for (unsigned int i = 0; i < inLen; i+= blockBytesLen)
@@ -101,14 +101,14 @@ char *AES::DecryptCBC(char in[], unsigned int inLen, char key[], char * iv)
   return out;
 }
 
-char *AES::EncryptCFB(char in[], unsigned int inLen, char key[], char * iv, unsigned int &outLen)
+uint8_t *AES::EncryptCFB(uint8_t in[], unsigned int inLen, uint8_t key[], uint8_t * iv, unsigned int &outLen)
 {
   outLen = GetPaddingLength(inLen);
-  char *alignIn  = PaddingNulls(in, inLen, outLen);
-  char *out = new char[outLen];
-  char *block = new char[blockBytesLen];
-  char *encryptedBlock = new char[blockBytesLen];
-  char *roundKeys = new char[4 * Nb * (Nr + 1)];
+  uint8_t *alignIn  = PaddingNulls(in, inLen, outLen);
+  uint8_t *out = new uint8_t[outLen];
+  uint8_t *block = new uint8_t[blockBytesLen];
+  uint8_t *encryptedBlock = new uint8_t[blockBytesLen];
+  uint8_t *roundKeys = new uint8_t[4 * Nb * (Nr + 1)];
   KeyExpansion(key, roundKeys);
   memcpy(block, iv, blockBytesLen);
   for (unsigned int i = 0; i < outLen; i+= blockBytesLen)
@@ -126,12 +126,12 @@ char *AES::EncryptCFB(char in[], unsigned int inLen, char key[], char * iv, unsi
   return out;
 }
 
-char *AES::DecryptCFB(char in[], unsigned int inLen, char key[], char * iv)
+uint8_t *AES::DecryptCFB(uint8_t in[], unsigned int inLen, uint8_t key[], uint8_t * iv)
 {
-  char *out = new char[inLen];
-  char *block = new char[blockBytesLen];
-  char *encryptedBlock = new char[blockBytesLen];
-  char *roundKeys = new char[4 * Nb * (Nr + 1)];
+  uint8_t *out = new uint8_t[inLen];
+  uint8_t *block = new uint8_t[blockBytesLen];
+  uint8_t *encryptedBlock = new uint8_t[blockBytesLen];
+  uint8_t *roundKeys = new uint8_t[4 * Nb * (Nr + 1)];
   KeyExpansion(key, roundKeys);
   memcpy(block, iv, blockBytesLen);
   for (unsigned int i = 0; i < inLen; i+= blockBytesLen)
@@ -148,9 +148,9 @@ char *AES::DecryptCFB(char in[], unsigned int inLen, char key[], char * iv)
   return out;
 }
 
-char * AES::PaddingNulls(char in[], unsigned int inLen, unsigned int alignLen)
+uint8_t * AES::PaddingNulls(uint8_t in[], unsigned int inLen, unsigned int alignLen)
 {
-  char *alignIn = new char[alignLen];
+  uint8_t *alignIn = new uint8_t[alignLen];
   memcpy(alignIn, in, inLen);
   memset(alignIn + inLen, 0x00, alignLen - inLen);
   return alignIn;
@@ -168,10 +168,10 @@ unsigned int AES::GetPaddingLength(unsigned int len)
   return lengthWithPadding;
 }
 
-void AES::EncryptBlock(char in[], char out[], char *roundKeys)
+void AES::EncryptBlock(uint8_t in[], uint8_t out[], uint8_t *roundKeys)
 {
-  char **state = new char *[4];
-  state[0] = new char[4 * Nb];
+  uint8_t **state = new uint8_t *[4];
+  state[0] = new uint8_t[4 * Nb];
   int i, j, round;
   for (i = 0; i < 4; i++)
   {
@@ -213,10 +213,10 @@ void AES::EncryptBlock(char in[], char out[], char *roundKeys)
   delete[] state;
 }
 
-void AES::DecryptBlock(char in[], char out[], char *roundKeys)
+void AES::DecryptBlock(uint8_t in[], uint8_t out[], uint8_t *roundKeys)
 {
-  char **state = new char *[4];
-  state[0] = new char[4 * Nb];
+  uint8_t **state = new uint8_t *[4];
+  state[0] = new uint8_t[4 * Nb];
   int i, j, round;
   for (i = 0; i < 4; i++)
   {
@@ -257,10 +257,10 @@ void AES::DecryptBlock(char in[], char out[], char *roundKeys)
 }
 
 
-void AES::SubBytes(char **state)
+void AES::SubBytes(uint8_t **state)
 {
   int i, j;
-  char t;
+  uint8_t t;
   for (i = 0; i < 4; i++)
   {
     for (j = 0; j < Nb; j++)
@@ -272,27 +272,27 @@ void AES::SubBytes(char **state)
 
 }
 
-void AES::ShiftRow(char **state, int i, int n)    // shift row i on n positions
+void AES::ShiftRow(uint8_t **state, int i, int n)    // shift row i on n positions
 {
-  char t;
+  uint8_t t;
   int k, j, index;
-  char *tmp = new char[Nb];
+  uint8_t *tmp = new uint8_t[Nb];
   for (j = 0; j < Nb; j++) {
     tmp[j] = state[i][(j + n) % Nb];
   }
-  memcpy(state[i], tmp, Nb * sizeof(char));
+  memcpy(state[i], tmp, Nb * sizeof(uint8_t));
 	
   delete[] tmp;
 }
 
-void AES::ShiftRows(char **state)
+void AES::ShiftRows(uint8_t **state)
 {
   ShiftRow(state, 1, 1);
   ShiftRow(state, 2, 2);
   ShiftRow(state, 3, 3);
 }
 
-char AES::xtime(char b)    // multiply on x
+uint8_t AES::xtime(uint8_t b)    // multiply on x
 {
   return (b << 1) ^ (((b >> 7) & 1) * 0x1b);
 }
@@ -300,12 +300,12 @@ char AES::xtime(char b)    // multiply on x
 
 
 /* Implementation taken from https://en.wikipedia.org/wiki/Rijndael_mix_columns#Implementation_example */
-void AES::MixSingleColumn(char *r) 
+void AES::MixSingleColumn(uint8_t *r) 
 {
-  char a[4];
-  char b[4];
-  char c;
-  char h;
+  uint8_t a[4];
+  uint8_t b[4];
+  uint8_t c;
+  uint8_t h;
   /* The array 'a' is simply a copy of the input array 'r'
   * The array 'b' is each element of the array 'a' multiplied by 2
   * in Rijndael's Galois field
@@ -314,7 +314,7 @@ void AES::MixSingleColumn(char *r)
   {
     a[c] = r[c];
     /* h is 0xff if the high bit of r[c] is set, 0 otherwise */
-    h = (char)((signed char)r[c] >> 7); /* arithmetic right shift, thus shifting in either zeros or ones */
+    h = (uint8_t)((signed char)r[c] >> 7); /* arithmetic right shift, thus shifting in either zeros or ones */
     b[c] = r[c] << 1; /* implicitly removes high bit because b[c] is an 8-bit char, so we xor by 0x1b and not 0x11b in the next line */
     b[c] ^= 0x1B & h; /* Rijndael's Galois field */
   }
@@ -325,9 +325,9 @@ void AES::MixSingleColumn(char *r)
 }
 
 /* Performs the mix columns step. Theory from: https://en.wikipedia.org/wiki/Advanced_Encryption_Standard#The_MixColumns_step */
-void AES::MixColumns(char** state) 
+void AES::MixColumns(uint8_t** state) 
 {
-  char *temp = new char[4];
+  uint8_t *temp = new uint8_t[4];
 
   for(int i = 0; i < 4; ++i)
   {
@@ -344,7 +344,7 @@ void AES::MixColumns(char** state)
   delete temp;
 }
 
-void AES::AddRoundKey(char **state, char *key)
+void AES::AddRoundKey(uint8_t **state, uint8_t *key)
 {
   int i, j;
   for (i = 0; i < 4; i++)
@@ -356,7 +356,7 @@ void AES::AddRoundKey(char **state, char *key)
   }
 }
 
-void AES::SubWord(char *a)
+void AES::SubWord(uint8_t *a)
 {
   int i;
   for (i = 0; i < 4; i++)
@@ -365,16 +365,16 @@ void AES::SubWord(char *a)
   }
 }
 
-void AES::RotWord(char *a)
+void AES::RotWord(uint8_t *a)
 {
-  char c = a[0];
+  uint8_t c = a[0];
   a[0] = a[1];
   a[1] = a[2];
   a[2] = a[3];
   a[3] = c;
 }
 
-void AES::XorWords(char *a, char *b, char *c)
+void AES::XorWords(uint8_t *a, uint8_t *b, uint8_t *c)
 {
   int i;
   for (i = 0; i < 4; i++)
@@ -383,10 +383,10 @@ void AES::XorWords(char *a, char *b, char *c)
   }
 }
 
-void AES::Rcon(char * a, int n)
+void AES::Rcon(uint8_t * a, int n)
 {
   int i;
-  char c = 1;
+  uint8_t c = 1;
   for (i = 0; i < n - 1; i++)
   {
     c = xtime(c);
@@ -396,10 +396,10 @@ void AES::Rcon(char * a, int n)
   a[1] = a[2] = a[3] = 0;
 }
 
-void AES::KeyExpansion(char key[], char w[])
+void AES::KeyExpansion(uint8_t key[], uint8_t w[])
 {
-  char *temp = new char[4];
-  char *rcon = new char[4];
+  uint8_t *temp = new uint8_t[4];
+  uint8_t *rcon = new uint8_t[4];
 
   int i = 0;
   while (i < 4 * Nk)
@@ -441,10 +441,10 @@ void AES::KeyExpansion(char key[], char w[])
 }
 
 
-void AES::InvSubBytes(char **state)
+void AES::InvSubBytes(uint8_t **state)
 {
   int i, j;
-  char t;
+  uint8_t t;
   for (i = 0; i < 4; i++)
   {
     for (j = 0; j < Nb; j++)
@@ -456,12 +456,12 @@ void AES::InvSubBytes(char **state)
 }
 
 
-char AES::mul_bytes(char a, char b) // multiplication a and b in galois field
+uint8_t AES::mul_bytes(uint8_t a, uint8_t b) // multiplication a and b in galois field
 {
-    char p = 0;
-    char high_bit_mask = 0x80;
-    char high_bit = 0;
-    char modulo = 0x1B; /* x^8 + x^4 + x^3 + x + 1 */
+    uint8_t p = 0;
+    uint8_t high_bit_mask = 0x80;
+    uint8_t high_bit = 0;
+    uint8_t modulo = 0x1B; /* x^8 + x^4 + x^3 + x + 1 */
 
 
     for (int i = 0; i < 8; i++) {
@@ -481,9 +481,9 @@ char AES::mul_bytes(char a, char b) // multiplication a and b in galois field
 }
 
 
-void AES::InvMixColumns(char **state)
+void AES::InvMixColumns(uint8_t **state)
 {
-  char s[4], s1[4];
+  uint8_t s[4], s1[4];
   int i, j;
 
   for (j = 0; j < Nb; j++)
@@ -504,14 +504,14 @@ void AES::InvMixColumns(char **state)
   }
 }
 
-void AES::InvShiftRows(char **state)
+void AES::InvShiftRows(uint8_t **state)
 {
   ShiftRow(state, 1, Nb - 1);
   ShiftRow(state, 2, Nb - 2);
   ShiftRow(state, 3, Nb - 3);
 }
 
-void AES::XorBlocks(char *a, char * b, char *c, unsigned int len)
+void AES::XorBlocks(uint8_t *a, uint8_t * b, uint8_t *c, unsigned int len)
 {
   for (unsigned int i = 0; i < len; i++)
   {
@@ -519,7 +519,7 @@ void AES::XorBlocks(char *a, char * b, char *c, unsigned int len)
   }
 }
 
-void AES::printHexArray (char a[], unsigned int n)
+void AES::printHexArray (uint8_t a[], unsigned int n)
 {
 	for (int i = 0; i < n; i++) {
 	  printf("%02x ", a[i]);

@@ -41,9 +41,10 @@
 
 #include <functional>
 
-#include <AES.h>
 
 #include <LoRa_E32.h>
+
+#include <AES.h>
 
 #define E32_SERVER_ADDRESS 1
 #define E32_SERVER_CHANNEL 1
@@ -54,9 +55,16 @@
 
 #define E32_WAKE_DELAY 3000
 
-#define E32_PSKEY "0123456789ABCDEF"  // 16 char
+#define E32_KEY_LENGTH 16
 
 
+static uint8_t E32_PSKEY[E32_KEY_LENGTH] = 
+	{
+		0x11 , 0x22, 0x33 , 0x44,
+		0x55 , 0x66, 0x77 , 0x88,
+		0x99 , 0xAA, 0xBB , 0xCC,
+		0xDD , 0xEE, 0xA2 , 0xB3
+	};
 
 typedef std::function<void(String Payload)> OnE32ReciveMessage;
 
@@ -143,16 +151,12 @@ class e32cp
          */
         void loop(); 
 
-    private:
+    //private:
         uint8_t _haddress,_laddress,_channel;
-        String _shared_key = "Test";
         LoRa_E32 * _lora;
-
         AES * _aes;
 
-        String OneTimePassword();
-        String decript(String data,String Key);
-        String encript(String data,String Key);
+        uint8_t * OneTimePassword();
 };
 
 

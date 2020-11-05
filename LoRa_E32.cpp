@@ -79,6 +79,8 @@ LoRa_E32::LoRa_E32(HardwareSerial *serial, UART_BPS_RATE bpsRate)
 	this->hs = serial;
 
 	this->bpsRate = bpsRate;
+
+	this->_timeout  = 1000;
 }
 LoRa_E32::LoRa_E32(HardwareSerial *serial, byte auxPin, UART_BPS_RATE bpsRate)
 { // , uint32_t serialConfig
@@ -275,7 +277,7 @@ bool LoRa_E32::begin()
 
 	this->serialDef.stream->setTimeout(1000);
 	Status status = setMode(MODE_0_NORMAL);
-	return status == SUCCESS;
+	return status == ERR_E32_SUCCESS;
 }
 
 /*
@@ -288,7 +290,7 @@ a timeout is provided to avoid an infinite loop
 Status LoRa_E32::waitCompleteResponse(unsigned long timeout, unsigned int waitNoAux)
 {
 
-	Status result = SUCCESS;
+	Status result = ERR_E32_SUCCESS;
 
 	unsigned long t = millis();
 
@@ -397,7 +399,7 @@ Status LoRa_E32::sendStruct(void *structureManaged, uint16_t size_)
 		return ERR_E32_PACKET_TOO_BIG;
 	}
 
-	Status result = SUCCESS;
+	Status result = ERR_E32_SUCCESS;
 
 	uint8_t len = this->serialDef.stream->write((uint8_t *)structureManaged, size_);
 	if (len != size_)
@@ -415,11 +417,11 @@ Status LoRa_E32::sendStruct(void *structureManaged, uint16_t size_)
 			result = ERR_E32_DATA_SIZE_NOT_MATCH;
 		}
 	}
-	if (result != SUCCESS)
+	if (result != ERR_E32_SUCCESS)
 		return result;
 
 	result = this->waitCompleteResponse(1000);
-	if (result != SUCCESS)
+	if (result != ERR_E32_SUCCESS)
 		return result;
 	DEBUG_PRINT(F("Clear buffer..."))
 	this->cleanUARTBuffer();
@@ -444,7 +446,7 @@ types each handle ints floats differently
 
 Status LoRa_E32::receiveStruct(void *structureManaged, uint16_t size_)
 {
-	Status result = SUCCESS;
+	Status result = ERR_E32_SUCCESS;
 
 	uint8_t len = this->serialDef.stream->readBytes((uint8_t *)structureManaged, size_);
 
@@ -464,11 +466,11 @@ Status LoRa_E32::receiveStruct(void *structureManaged, uint16_t size_)
 			result = ERR_E32_DATA_SIZE_NOT_MATCH;
 		}
 	}
-	if (result != SUCCESS)
+	if (result != ERR_E32_SUCCESS)
 		return result;
 
 	result = this->waitCompleteResponse(1000);
-	if (result != SUCCESS)
+	if (result != ERR_E32_SUCCESS)
 		return result;
 
 	return result;
@@ -529,7 +531,7 @@ Status LoRa_E32::setMode(MODE_TYPE mode)
 	// wait until aux pin goes back low
 	Status res = this->waitCompleteResponse(1000);
 
-	if (res == SUCCESS)
+	if (res == ERR_E32_SUCCESS)
 	{
 		this->mode = mode;
 	}
@@ -555,13 +557,13 @@ ResponseStructContainer LoRa_E32::getConfiguration()
 	ResponseStructContainer rc;
 
 	rc.status.code = checkUARTConfiguration(MODE_3_PROGRAM);
-	if (rc.status.code != SUCCESS)
+	if (rc.status.code != ERR_E32_SUCCESS)
 		return rc;
 
 	MODE_TYPE prevMode = this->mode;
 
 	rc.status.code = this->setMode(MODE_3_PROGRAM);
-	if (rc.status.code != SUCCESS)
+	if (rc.status.code != ERR_E32_SUCCESS)
 		return rc;
 
 	this->writeProgramCommand(READ_CONFIGURATION);
@@ -573,7 +575,7 @@ ResponseStructContainer LoRa_E32::getConfiguration()
 	this->printParameters((Configuration *)rc.data);
 #endif
 
-	if (rc.status.code != SUCCESS)
+	if (rc.status.code != ERR_E32_SUCCESS)
 	{
 		this->setMode(prevMode);
 		return rc;
@@ -589,7 +591,7 @@ ResponseStructContainer LoRa_E32::getConfiguration()
 	DEBUG_PRINTLN("----------------------------------------");
 
 	rc.status.code = this->setMode(prevMode);
-	if (rc.status.code != SUCCESS)
+	if (rc.status.code != ERR_E32_SUCCESS)
 		return rc;
 
 	if (0xC0 != ((Configuration *)rc.data)->HEAD && 0xC2 != ((Configuration *)rc.data)->HEAD)
@@ -606,7 +608,7 @@ RESPONSE_STATUS LoRa_E32::checkUARTConfiguration(MODE_TYPE mode)
 	{
 		return ERR_E32_WRONG_UART_CONFIG;
 	}
-	return SUCCESS;
+	return ERR_E32_SUCCESS;
 }
 
 ResponseStatus LoRa_E32::setConfiguration(Configuration configuration, PROGRAM_COMMAND saveType)
@@ -614,13 +616,13 @@ ResponseStatus LoRa_E32::setConfiguration(Configuration configuration, PROGRAM_C
 	ResponseStatus rc;
 
 	rc.code = checkUARTConfiguration(MODE_3_PROGRAM);
-	if (rc.code != SUCCESS)
+	if (rc.code != ERR_E32_SUCCESS)
 		return rc;
 
 	MODE_TYPE prevMode = this->mode;
 
 	rc.code = this->setMode(MODE_3_PROGRAM);
-	if (rc.code != SUCCESS)
+	if (rc.code != ERR_E32_SUCCESS)
 		return rc;
 
 	this->writeProgramCommand(READ_CONFIGURATION);
@@ -628,7 +630,7 @@ ResponseStatus LoRa_E32::setConfiguration(Configuration configuration, PROGRAM_C
 	configuration.HEAD = saveType;
 
 	rc.code = this->sendStruct((uint8_t *)&configuration, sizeof(Configuration));
-	if (rc.code != SUCCESS)
+	if (rc.code != ERR_E32_SUCCESS)
 	{
 		this->setMode(prevMode);
 		return rc;
@@ -644,7 +646,7 @@ ResponseStatus LoRa_E32::setConfiguration(Configuration configuration, PROGRAM_C
 	DEBUG_PRINTLN("----------------------------------------");
 
 	rc.code = this->setMode(prevMode);
-	if (rc.code != SUCCESS)
+	if (rc.code != ERR_E32_SUCCESS)
 		return rc;
 
 	if (0xC0 != configuration.HEAD && 0xC2 != configuration.HEAD)
@@ -660,27 +662,27 @@ ResponseStructContainer LoRa_E32::getModuleInformation()
 	ResponseStructContainer rc;
 
 	rc.status.code = checkUARTConfiguration(MODE_3_PROGRAM);
-	if (rc.status.code != SUCCESS)
+	if (rc.status.code != ERR_E32_SUCCESS)
 		return rc;
 
 	MODE_TYPE prevMode = this->mode;
 
 	rc.status.code = this->setMode(MODE_3_PROGRAM);
-	if (rc.status.code != SUCCESS)
+	if (rc.status.code != ERR_E32_SUCCESS)
 		return rc;
 
 	this->writeProgramCommand(READ_MODULE_VERSION);
 
 	struct ModuleInformation *moduleInformation = (ModuleInformation *)malloc(sizeof(ModuleInformation));
 	rc.status.code = this->receiveStruct((uint8_t *)moduleInformation, sizeof(ModuleInformation));
-	if (rc.status.code != SUCCESS)
+	if (rc.status.code != ERR_E32_SUCCESS)
 	{
 		this->setMode(prevMode);
 		return rc;
 	}
 
 	rc.status.code = this->setMode(prevMode);
-	if (rc.status.code != SUCCESS)
+	if (rc.status.code != ERR_E32_SUCCESS)
 		return rc;
 
 	if (0xC3 != moduleInformation->HEAD)
@@ -714,26 +716,26 @@ ResponseStatus LoRa_E32::resetModule()
 	ResponseStatus status;
 
 	status.code = checkUARTConfiguration(MODE_3_PROGRAM);
-	if (status.code != SUCCESS)
+	if (status.code != ERR_E32_SUCCESS)
 		return status;
 
 	MODE_TYPE prevMode = this->mode;
 
 	status.code = this->setMode(MODE_3_PROGRAM);
-	if (status.code != SUCCESS)
+	if (status.code != ERR_E32_SUCCESS)
 		return status;
 
 	this->writeProgramCommand(WRITE_RESET_MODULE);
 
 	status.code = this->waitCompleteResponse(1000);
-	if (status.code != SUCCESS)
+	if (status.code != ERR_E32_SUCCESS)
 	{
 		this->setMode(prevMode);
 		return status;
 	}
 
 	status.code = this->setMode(prevMode);
-	if (status.code != SUCCESS)
+	if (status.code != ERR_E32_SUCCESS)
 		return status;
 
 	return status;
@@ -749,7 +751,7 @@ ResponseContainer LoRa_E32::receiveMessage()
 	if (rc.data == NULL)
 		rc.status.code = ERR_E32_UNKNOWN;
 	else
-		rc.status.code = SUCCESS;
+		rc.status.code = ERR_E32_SUCCESS;
 
 	return rc;
 }
@@ -762,7 +764,7 @@ ResponseContainer LoRa_E32::receiveMessageUntil(char delimiter)
 	if (rc.data == NULL)
 		rc.status.code = ERR_E32_UNKNOWN;
 	else
-		rc.status.code = SUCCESS;
+		rc.status.code = ERR_E32_SUCCESS;
 
 	return rc;
 }
@@ -774,7 +776,7 @@ ResponseStructContainer LoRa_E32::receiveMessage(const uint8_t size)
 	rc.data = malloc(size);
 	rc.status.code = this->receiveStruct((uint8_t *)rc.data, size);
 	this->cleanUARTBuffer();
-	if (rc.status.code != SUCCESS)
+	if (rc.status.code != ERR_E32_SUCCESS)
 	{
 		return rc;
 	}
@@ -782,9 +784,9 @@ ResponseStructContainer LoRa_E32::receiveMessage(const uint8_t size)
 	return rc;
 }
 
-ResponseContainer LoRa_E32::waitForReceiveMessage(unsigned long ms)
+RawResponseContainer LoRa_E32::waitForReceiveRawMessage(unsigned long ms)
 {
-	ResponseContainer rc;
+	RawResponseContainer rc;
 
 	unsigned long time_to_stop = millis() + ms;
 
@@ -792,7 +794,7 @@ ResponseContainer LoRa_E32::waitForReceiveMessage(unsigned long ms)
 	{
 		if (this->available())
 		{
-			rc = this->receiveMessage();
+			rc = this->receiveRawMessage();
 			return rc;
 		}
 		this->managedDelay(E32_LOOP_DELAY);
@@ -806,7 +808,7 @@ ResponseStatus LoRa_E32::sendMessage(const void *message, const uint8_t size)
 {
 	ResponseStatus status;
 	status.code = this->sendStruct((uint8_t *)message, size);
-	if (status.code != SUCCESS)
+	if (status.code != ERR_E32_SUCCESS)
 		return status;
 
 	return status;
@@ -823,7 +825,7 @@ ResponseStatus LoRa_E32::sendMessage(const String message)
 
 	ResponseStatus status;
 	status.code = this->sendStruct((uint8_t *)&messageFixed, size);
-	if (status.code != SUCCESS)
+	if (status.code != ERR_E32_SUCCESS)
 		return status;
 
 	return status;
@@ -855,7 +857,7 @@ FixedStransmission *init_stack(int m)
 	return st;
 }
 
-ResponseStatus LoRa_E32::sendFixedMessage(byte ADDH, byte ADDL, byte CHAN, const void *message, const uint8_t size)
+ResponseStatus LoRa_E32::sendFixedMessage(byte ADDH, byte ADDL, byte CHAN, const void *message, const size_t size)
 {
 	FixedStransmission *fixedStransmission = init_stack(size);
 	fixedStransmission->ADDH = ADDH;
@@ -869,7 +871,7 @@ ResponseStatus LoRa_E32::sendFixedMessage(byte ADDH, byte ADDL, byte CHAN, const
 
 	free(fixedStransmission);
 
-	if (status.code != SUCCESS)
+	if (status.code != ERR_E32_SUCCESS)
 		return status;
 
 	return status;
@@ -882,7 +884,7 @@ ResponseStatus LoRa_E32::sendBroadcastFixedMessage(byte CHAN, const void *messag
 ResponseContainer LoRa_E32::receiveInitialMessage(uint8_t size)
 {
 	ResponseContainer rc;
-	rc.status.code = SUCCESS;
+	rc.status.code = ERR_E32_SUCCESS;
 	char buff[size];
 	uint8_t len = this->serialDef.stream->readBytes(buff, size);
 	if (len != size)
@@ -901,4 +903,40 @@ ResponseContainer LoRa_E32::receiveInitialMessage(uint8_t size)
 	rc.data = buff;
 
 	return rc;
+}
+
+
+RawResponseContainer LoRa_E32::receiveRawMessage()
+{
+	RawResponseContainer rc;
+
+	rc.data = (uint8_t *)malloc(MAX_SIZE_RX_PACKET_SIZE);
+
+	rc.length  = 0;
+    int c = this->timedRead();
+    while(c >= 0) {
+        rc.data[rc.length]= (uint8_t) c;
+		rc.length++;
+        c = this->timedRead();
+    }
+
+	this->cleanUARTBuffer();
+
+	rc.status.code = ERR_E32_SUCCESS;
+
+	return rc;
+}
+
+
+int LoRa_E32::timedRead()
+{
+    int c;
+    this->_startMillis = millis();
+    do {
+        c = this->serialDef.stream->read();
+        if(c >= 0) {
+            return c;
+        }
+    } while(millis() - this->_startMillis < this->_timeout);
+    return -1;     // -1 indicates timeout
 }

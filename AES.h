@@ -16,69 +16,69 @@ private:
 
   unsigned int blockBytesLen;
 
-  void SubBytes(char **state);
+  void SubBytes(uint8_t **state);
 
-  void ShiftRow(char **state, int i, int n);    // shift row i on n positions
+  void ShiftRow(uint8_t **state, int i, int n);    // shift row i on n positions
 
-  void ShiftRows(char **state);
+  void ShiftRows(uint8_t **state);
 
-  char xtime(char b);    // multiply on x
+  uint8_t xtime(uint8_t b);    // multiply on x
 
-  char mul_bytes(char a, char b);
+  uint8_t mul_bytes(uint8_t a, uint8_t b);
 
-  void MixColumns(char **state);
+  void MixColumns(uint8_t **state);
 
-  void MixSingleColumn(char *r);
+  void MixSingleColumn(uint8_t *r);
 
-  void AddRoundKey(char **state, char *key);
+  void AddRoundKey(uint8_t **state, uint8_t *key);
 
-  void SubWord(char *a);
+  void SubWord(uint8_t *a);
 
-  void RotWord(char *a);
+  void RotWord(uint8_t *a);
 
-  void XorWords(char *a, char *b, char *c);
+  void XorWords(uint8_t *a, uint8_t *b, uint8_t *c);
 
-  void Rcon(char * a, int n);
+  void Rcon(uint8_t * a, int n);
 
-  void InvSubBytes(char **state);
+  void InvSubBytes(uint8_t **state);
 
-  void InvMixColumns(char **state);
+  void InvMixColumns(uint8_t **state);
 
-  void InvShiftRows(char **state);
+  void InvShiftRows(uint8_t **state);
 
-  char* PaddingNulls(char in[], unsigned int inLen, unsigned int alignLen);
+  uint8_t* PaddingNulls(uint8_t in[], unsigned int inLen, unsigned int alignLen);
   
   unsigned int GetPaddingLength(unsigned int len);
 
-  void KeyExpansion(char key[], char w[]);
+  void KeyExpansion(uint8_t key[], uint8_t w[]);
 
-  void EncryptBlock(char in[], char out[], char key[]);
+  void EncryptBlock(uint8_t in[], uint8_t out[], uint8_t key[]);
 
-  void DecryptBlock(char in[], char out[], char key[]);
+  void DecryptBlock(uint8_t in[], uint8_t out[], uint8_t key[]);
 
-  void XorBlocks(char *a, char * b, char *c, unsigned int len);
+  void XorBlocks(uint8_t *a, uint8_t * b, uint8_t *c, unsigned int len);
 
 public:
   AES(int keyLen = 256);
 
-  char * EncryptECB(char in[], unsigned int inLen, char key[], unsigned int &outLen);
+  uint8_t *EncryptECB(uint8_t in[], unsigned int inLen, uint8_t key[], unsigned int &outLen);
 
-  char * DecryptECB(char in[], unsigned int inLen, char key[]);
+  uint8_t *DecryptECB(uint8_t in[], unsigned int inLen, uint8_t key[]);
 
-  char * EncryptCBC(char in[], unsigned int inLen, char key[], char * iv, unsigned int &outLen);
+  uint8_t *EncryptCBC(uint8_t in[], unsigned int inLen, uint8_t key[], uint8_t * iv, unsigned int &outLen);
 
-  char * DecryptCBC(char in[], unsigned int inLen, char key[], char * iv);
+  uint8_t *DecryptCBC(uint8_t in[], unsigned int inLen, uint8_t key[], uint8_t * iv);
 
-  char * EncryptCFB(char in[], unsigned int inLen, char key[], char * iv, unsigned int &outLen);
+  uint8_t *EncryptCFB(uint8_t in[], unsigned int inLen, uint8_t key[], uint8_t * iv, unsigned int &outLen);
 
-  char * DecryptCFB(char in[], unsigned int inLen, char key[], char * iv);
+  uint8_t *DecryptCFB(uint8_t in[], unsigned int inLen, uint8_t key[], uint8_t * iv);
   
-  void printHexArray (char a[], unsigned int n);
+  void printHexArray (uint8_t a[], unsigned int n);
 
 
 };
 
-const char sbox[16][16] = {
+const uint8_t sbox[16][16] = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5,
     0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0,
@@ -113,7 +113,7 @@ const char sbox[16][16] = {
     0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
   };
 
-const char inv_sbox[16][16] = {
+const uint8_t inv_sbox[16][16] = {
     0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38,
     0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
     0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87,
