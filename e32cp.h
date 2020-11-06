@@ -53,7 +53,7 @@
 
 #define E32_HANDUP_COMMAND "handup"
 
-#define E32_WAKE_DELAY 3000
+#define E32_WAKE_DELAY 4000
 
 #define E32_KEY_LENGTH 16
 

@@ -34,6 +34,8 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 
     if(rs.code != ERR_E32_SUCCESS ) return false;
 
+    delay(2000);
+
     this->_lora->setMode(MODE_0_NORMAL);
 
     RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
