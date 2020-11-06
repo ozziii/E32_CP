@@ -187,6 +187,9 @@ struct RawResponseContainer
 	uint8_t * data;
 	size_t length;
 	ResponseStatus status;
+	void close() {
+		free(this->data);
+	}
 };
 
 #pragma pack(pop)
