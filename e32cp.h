@@ -31,14 +31,11 @@
 #ifndef E32CP_h
 #define E32CP_h
 
-#if ARDUINO >= 100
 #include "Arduino.h"
-#else
-#include "WProgram.h"
-#endif
 
 #include <functional>
 #include <bootloader_random.h>
+#include "driver/uart.h"
 
 #include <LoRa_E32.h>
 #include <AES.h>
@@ -55,24 +52,9 @@
 
 #define E32_KEY_LENGTH 16
 
-static uint8_t E32_PSKEY[E32_KEY_LENGTH] =
-    {
-        0x11, 0x22, 0x33, 0x44,
-        0x55, 0x66, 0x77, 0x88,
-        0x99, 0xAA, 0xBB, 0xCC,
-        0xDD, 0xEE, 0xA2, 0xB3};
 
 typedef std::function<void(String Payload)> OnE32ReciveMessage;
 
-// COMMENT
-#define ASYNC_E32
-
-#ifdef ASYNC_E32
-#include "driver/uart.h"
-
-static void IRAM_ATTR e32_uart_intr_handle(void *);
-static uart_isr_handle_t *e32_handle_console;
-#endif
 
 class e32cp
 {
@@ -159,7 +141,5 @@ private:
     uint8_t *OneTimePassword();
 };
 
-static e32cp *E32Self;
-static OnE32ReciveMessage e32_function_callback;
 
 #endif

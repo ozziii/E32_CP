@@ -1,6 +1,17 @@
 #include <e32cp.h>
 #include <vector>
 
+static e32cp *E32Self;
+static OnE32ReciveMessage e32_function_callback;
+static uart_isr_handle_t *e32_handle_console;
+
+static uint8_t E32_PSKEY[E32_KEY_LENGTH] =
+    {
+        0x11, 0x22, 0x33, 0x44,
+        0x55, 0x66, 0x77, 0x88,
+        0x99, 0xAA, 0xBB, 0xCC,
+        0xDD, 0xEE, 0xA2, 0xB3};
+
 volatile bool e32cp_stop_lissen = false;
 
 static std::vector<String> splitString(const char *init, char c)
