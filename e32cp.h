@@ -34,7 +34,11 @@
 #include "Arduino.h"
 
 #include <functional>
+
+extern "C"
+{
 #include <bootloader_random.h>
+}
 #include "driver/uart.h"
 
 #include <LoRa_E32.h>
@@ -52,41 +56,39 @@
 
 #define E32_KEY_LENGTH 16
 
-
 typedef std::function<void(String Payload)> OnE32ReciveMessage;
-
 
 class e32cp
 {
 public:
-    /**
+     /**
          * Client CTOR
          * 
          * 
          * 
          */
-    e32cp(LoRa_E32 *lora, uint16_t address = E32_SERVER_ADDRESS, uint8_t channel = E32_SERVER_CHANNEL, bool bootloader_random = false);
+     e32cp(LoRa_E32 *lora, uint16_t address = E32_SERVER_ADDRESS, uint8_t channel = E32_SERVER_CHANNEL, bool bootloader_random = false);
 
-    /**
+     /**
          *   MAKE ASYCRONUS URAT FUNCTION ONLY FOR HARDWARE SERIAL
          * 
          * 
          */
-    void attachInterrupt(uart_port_t uart_number, OnE32ReciveMessage callback, e32cp *self);
+     void attachInterrupt(uart_port_t uart_number, OnE32ReciveMessage callback, e32cp *self);
 
-    /**
+     /**
          * 
          */
-    bool begin();
+     bool begin();
 
-    /**
+     /**
          * 
          * 
          * 
          */
-    bool config();
+     bool config();
 
-    /**
+     /**
          * Send command to wake sleppy client
          * Send Wake --> wait for Key --> Send Payload 
          * 
@@ -94,9 +96,9 @@ public:
          * 
          * 
          */
-    bool sleepyWake(uint16_t address, uint8_t channel, String payload);
+     bool sleepyWake(uint16_t address, uint8_t channel, String payload);
 
-    /**
+     /**
          * sleppy client  recive command
          * After wake -->  Send key --> wait for payload
          * 
@@ -104,9 +106,9 @@ public:
          * 
          * 
          */
-    String sleepyIsWake();
+     String sleepyIsWake();
 
-    /**
+     /**
          * Sensor client send data
          * Send Request --> wait for key --> send data
          * 
@@ -114,32 +116,31 @@ public:
          * 
          * 
          */
-    bool sensorSend(String payload);
+     bool sensorSend(String payload);
 
-    /**
+     /**
          * Recieve request -> send key -> recieve data
          * 
          * 
          */
-    String ServerRecieve();
+     String ServerRecieve();
 
-    /**
+     /**
          * 
          * 
          * 
          * 
          * 
          */
-    void loop();
+     void loop();
 
 private:
-    uint8_t _haddress, _laddress, _channel;
-    LoRa_E32 *_lora;
-    AES *_aes;
-    bool _bootloader_random;
+     uint8_t _haddress, _laddress, _channel;
+     LoRa_E32 *_lora;
+     AES *_aes;
+     bool _bootloader_random;
 
-    uint8_t *OneTimePassword();
+     uint8_t *OneTimePassword();
 };
-
 
 #endif
