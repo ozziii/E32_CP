@@ -74,7 +74,7 @@ public:
          * 
          * 
          */
-     void attachInterrupt(uart_port_t uart_number, OnE32ReciveMessage callback, e32cp *self);
+     void attachInterrupt(OnE32ReciveMessage callback);
 
      /**
          * 
@@ -138,7 +138,8 @@ private:
      uint8_t _haddress, _laddress, _channel;
      LoRa_E32 *_lora;
      AES *_aes;
-     bool _bootloader_random;
+     bool _bootloader_random  , e32cp_stop_lissen = false;
+     OnE32ReciveMessage e32_function_callback;
 
      uint8_t *OneTimePassword();
 };

@@ -1,18 +1,12 @@
 #include <e32cp.h>
 #include <vector>
 
-static e32cp *E32Self;
-static OnE32ReciveMessage e32_function_callback;
-static uart_isr_handle_t *e32_handle_console;
-
 static uint8_t E32_PSKEY[E32_KEY_LENGTH] =
     {
         0x11, 0x22, 0x33, 0x44,
         0x55, 0x66, 0x77, 0x88,
         0x99, 0xAA, 0xBB, 0xCC,
         0xDD, 0xEE, 0xA2, 0xB3};
-
-volatile bool e32cp_stop_lissen = false;
 
 static std::vector<String> splitString(const char *init, char c)
 {
@@ -43,15 +37,6 @@ static std::vector<String> splitString(const char *init, char c)
     return ret;
 }
 
-static void IRAM_ATTR e32_uart_intr_handle(void *)
-{
-    if (!e32cp_stop_lissen)
-    {
-        String result = E32Self->ServerRecieve();
-        if (result.length() > 0)
-            e32_function_callback(result);
-    }
-}
 
 e32cp::e32cp(LoRa_E32 *lora, uint16_t address, uint8_t channel, bool bootloader_random)
 {
@@ -63,13 +48,9 @@ e32cp::e32cp(LoRa_E32 *lora, uint16_t address, uint8_t channel, bool bootloader_
     this->_bootloader_random = bootloader_random;
 }
 
-void e32cp::attachInterrupt(uart_port_t uart_number, OnE32ReciveMessage callback, e32cp *self)
+void e32cp::attachInterrupt(OnE32ReciveMessage callback)
 {
-    E32Self = self;
     e32_function_callback = callback;
-
-    uart_isr_register(uart_number, e32_uart_intr_handle, NULL, ESP_INTR_FLAG_LOWMED, e32_handle_console);
-    uart_enable_rx_intr(uart_number);
 }
 
 bool e32cp::begin()
@@ -111,7 +92,7 @@ bool e32cp::config()
 
 bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 {
-    e32cp_stop_lissen = true;
+    this->e32cp_stop_lissen = true;
 
     this->_lora->setMode(MODE_1_WAKE_UP);
 
@@ -122,7 +103,7 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 
     if (rs.code != ERR_E32_SUCCESS)
     {
-        e32cp_stop_lissen = false;
+        this->e32cp_stop_lissen = false;
         return false;
     }
 
@@ -132,7 +113,7 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 
     RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
-    e32cp_stop_lissen = false;
+    this->e32cp_stop_lissen = false;
 
     if (CriptedKey.status.code != ERR_E32_SUCCESS)
         return false;
@@ -163,19 +144,19 @@ String e32cp::sleepyIsWake()
     unsigned int out_len;
     uint8_t *CriptOneTimeKey = this->_aes->EncryptECB(oneTimeKey, E32_KEY_LENGTH, E32_PSKEY, out_len);
 
-    e32cp_stop_lissen = true;
+    this->e32cp_stop_lissen = true;
 
     ResponseStatus rs = this->_lora->sendFixedMessage(0, E32_SERVER_ADDRESS, E32_SERVER_CHANNEL, CriptOneTimeKey, (uint8_t)out_len);
 
     if (rs.code != ERR_E32_SUCCESS)
     {
-        e32cp_stop_lissen = false;
+        this->e32cp_stop_lissen = false;
         return String();
     }
 
     RawResponseContainer CriptMessage = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
-    e32cp_stop_lissen = false;
+    this->e32cp_stop_lissen = false;
 
     if (CriptMessage.status.code != ERR_E32_SUCCESS)
         return String();
@@ -195,19 +176,19 @@ bool e32cp::sensorSend(String payload)
 
     String hand_up_message = E32_HANDUP_COMMAND + E32_HANDUP_SEPARATOR_CHAR + String(this->_laddress);
 
-    e32cp_stop_lissen = true;
+    this->e32cp_stop_lissen = true;
 
     ResponseStatus rs = this->_lora->sendFixedMessage(0, E32_SERVER_ADDRESS, E32_SERVER_CHANNEL, hand_up_message);
 
     if (rs.code != ERR_E32_SUCCESS)
     {
-        e32cp_stop_lissen = false;
+        this->e32cp_stop_lissen = false;
         return false;
     }
 
     RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
-    e32cp_stop_lissen = false;
+    this->e32cp_stop_lissen = false;
 
     if (CriptedKey.status.code != ERR_E32_SUCCESS)
         return false;
@@ -252,19 +233,19 @@ String e32cp::ServerRecieve()
 
         uint8_t *CriptOneTimeKey = this->_aes->EncryptECB(oneTimeKey, E32_KEY_LENGTH, E32_PSKEY, out_len);
 
-        e32cp_stop_lissen = true;
+        this->e32cp_stop_lissen = true;
 
         ResponseStatus rs = this->_lora->sendFixedMessage(0, clientAddress, E32_SERVER_CHANNEL, CriptOneTimeKey, (uint8_t)out_len);
 
         if (rs.code != ERR_E32_SUCCESS)
         {
-            e32cp_stop_lissen = false;
+            this->e32cp_stop_lissen = false;
             return String();
         }
 
         RawResponseContainer CriptMessage = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
-        e32cp_stop_lissen = false;
+        this->e32cp_stop_lissen = false;
 
         if (CriptMessage.status.code != ERR_E32_SUCCESS)
             return String();
@@ -283,9 +264,9 @@ String e32cp::ServerRecieve()
 
 void e32cp::loop()
 {
-    if (this->_lora->available() && !e32cp_stop_lissen)
+    if (this->_lora->available() && !this->e32cp_stop_lissen)
     {
-        String result = E32Self->ServerRecieve();
+        String result = this->ServerRecieve();
         if (result.length() > 0)
             e32_function_callback(result);
     }
