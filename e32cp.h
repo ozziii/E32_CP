@@ -44,7 +44,8 @@ extern "C"
 #include <LoRa_E32.h>
 #include <AES.h>
 
-#define E32_SERVER_ADDRESS 1
+// SERVER ADDRESS
+#define E32_SERVER_ADDRESS 0
 #define E32_SERVER_CHANNEL 3
 
 #define E32_WAKE_COMMAND "wake"
@@ -133,6 +134,15 @@ public:
          * 
          */
      void loop();
+
+
+     /**
+      * 
+      * 
+      * 
+      */
+     bool available();
+
 
 private:
      uint8_t _haddress, _laddress, _channel;

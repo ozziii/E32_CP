@@ -37,7 +37,6 @@ static std::vector<String> splitString(const char *init, char c)
     return ret;
 }
 
-
 e32cp::e32cp(LoRa_E32 *lora, uint16_t address, uint8_t channel, bool bootloader_random)
 {
     this->_aes = new AES(128);
@@ -46,6 +45,7 @@ e32cp::e32cp(LoRa_E32 *lora, uint16_t address, uint8_t channel, bool bootloader_
     this->_haddress = (uint8_t)((address >> 8) & 0xff);
     this->_channel = channel;
     this->_bootloader_random = bootloader_random;
+    this->e32cp_stop_lissen = false;
 }
 
 void e32cp::attachInterrupt(OnE32ReciveMessage callback)
@@ -94,7 +94,14 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 {
     this->e32cp_stop_lissen = true;
 
-    this->_lora->setMode(MODE_1_WAKE_UP);
+    Status mode = this->_lora->setMode(MODE_1_WAKE_UP);
+
+    if(mode != ERR_E32_SUCCESS )
+    {
+        this->e32cp_stop_lissen = false;
+        return false;
+    }
+
 
     uint8_t addL = (uint8_t)(address & 0xff);
     uint8_t addH = (uint8_t)((address >> 8) & 0xff);
@@ -109,16 +116,27 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 
     delay(2000);
 
-    this->_lora->setMode(MODE_0_NORMAL);
+    mode = this->_lora->setMode(MODE_0_NORMAL);
+
+    if(mode != ERR_E32_SUCCESS )
+    {
+        this->e32cp_stop_lissen = false;
+        return false;
+    }
 
     RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
     this->e32cp_stop_lissen = false;
 
     if (CriptedKey.status.code != ERR_E32_SUCCESS)
+    {
         return false;
+    }
+
     if (CriptedKey.data == NULL)
+    {
         return false;
+    }
 
     uint8_t *oneTimeKey = this->_aes->DecryptECB(CriptedKey.data, CriptedKey.length, E32_PSKEY);
 
@@ -132,9 +150,13 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
     free(message);
 
     if (rs.code == ERR_E32_SUCCESS)
+    {
         return true;
+    }
     else
+    {
         return false;
+    }
 }
 
 String e32cp::sleepyIsWake()
@@ -264,12 +286,20 @@ String e32cp::ServerRecieve()
 
 void e32cp::loop()
 {
-    if (this->_lora->available() && !this->e32cp_stop_lissen)
+    if (this->available())
     {
         String result = this->ServerRecieve();
         if (result.length() > 0)
             e32_function_callback(result);
     }
+}
+
+bool e32cp::available()
+{
+    if (this->e32cp_stop_lissen)
+        return false;
+
+    return (this->_lora->available() > 0);
 }
 
 uint8_t *e32cp::OneTimePassword()
