@@ -99,6 +99,7 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
     if(mode != ERR_E32_SUCCESS )
     {
         this->e32cp_stop_lissen = false;
+        Serial.println("ERROR SET MODE 1");
         return false;
     }
 
@@ -111,6 +112,7 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
     if (rs.code != ERR_E32_SUCCESS)
     {
         this->e32cp_stop_lissen = false;
+        Serial.printf("ERROR SEND WAKE : %s ",rs.getResponseDescription().c_str());
         return false;
     }
 
@@ -121,6 +123,7 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
     if(mode != ERR_E32_SUCCESS )
     {
         this->e32cp_stop_lissen = false;
+        Serial.println("ERROR SET MODE 0");
         return false;
     }
 
@@ -130,6 +133,7 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 
     if (CriptedKey.status.code != ERR_E32_SUCCESS)
     {
+        Serial.printf("ERROR recieve key  : %s ",CriptedKey.status.getResponseDescription().c_str());
         return false;
     }
 
@@ -155,6 +159,7 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
     }
     else
     {
+        Serial.printf("ERROR recieve key  : %s ", rs.getResponseDescription().c_str());
         return false;
     }
 }
