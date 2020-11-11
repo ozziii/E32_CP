@@ -103,6 +103,7 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
         return false;
     }
 
+    Serial.println("SET MODE 1 OK");
 
     uint8_t addL = (uint8_t)(address & 0xff);
     uint8_t addH = (uint8_t)((address >> 8) & 0xff);
@@ -112,9 +113,12 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
     if (rs.code != ERR_E32_SUCCESS)
     {
         this->e32cp_stop_lissen = false;
-        Serial.printf("ERROR SEND WAKE : %s ",rs.getResponseDescription().c_str());
+        Serial.printf("ERROR SEND WAKE : %s \n",rs.getResponseDescription().c_str());
         return false;
     }
+
+    Serial.printf("SEND WAKE COMMAND OK : H:%u,L:%u,C:%u \n",addH,addL,channel);
+
 
     delay(2000);
 
@@ -127,15 +131,19 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
         return false;
     }
 
-    RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
+    Serial.println("SET MODE 0 OK");
 
-    this->e32cp_stop_lissen = false;
+    RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
     if (CriptedKey.status.code != ERR_E32_SUCCESS)
     {
-        Serial.printf("ERROR recieve key  : %s ",CriptedKey.status.getResponseDescription().c_str());
+        Serial.printf("ERROR recieve key  : %s \n ",CriptedKey.status.getResponseDescription().c_str());
         return false;
     }
+
+    this->e32cp_stop_lissen = false;
+
+    Serial.printf("RECIVE KEY OK \n ");
 
     if (CriptedKey.data == NULL)
     {
@@ -151,15 +159,18 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 
     rs = this->_lora->sendFixedMessage(addH, addL, channel, (void *)message, (uint8_t)out_len);
 
+
+
     free(message);
 
     if (rs.code == ERR_E32_SUCCESS)
     {
         return true;
+        Serial.printf("SEND MESSAGE ok : H:%u,L:%u,C:%u \n",addH,addL,channel);
     }
     else
     {
-        Serial.printf("ERROR recieve key  : %s ", rs.getResponseDescription().c_str());
+        Serial.printf("ERROR SEND MESSAGE  : H:%u,L:%u,C:%u \n",addH,addL,channel);
         return false;
     }
 }

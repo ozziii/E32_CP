@@ -79,6 +79,9 @@
 	#define DEBUG_PRINTLN(...) {}
 #endif
 
+
+#define E32_TIMED_READ_TIMEOUT 1000
+
 enum MODE_TYPE
 {
   MODE_0_NORMAL = 0,

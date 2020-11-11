@@ -79,8 +79,6 @@ LoRa_E32::LoRa_E32(HardwareSerial *serial, UART_BPS_RATE bpsRate)
 	this->hs = serial;
 
 	this->bpsRate = bpsRate;
-
-	this->_timeout  = 1000;
 }
 LoRa_E32::LoRa_E32(HardwareSerial *serial, byte auxPin, UART_BPS_RATE bpsRate)
 { // , uint32_t serialConfig
@@ -788,18 +786,16 @@ RawResponseContainer LoRa_E32::waitForReceiveRawMessage(unsigned long ms)
 {
 	RawResponseContainer rc;
 
-	unsigned long time_to_stop = millis() + ms;
+	unsigned long start_time = millis();
 
-	while (time_to_stop > millis())
+	while ( millis() - start_time  <   ms )
 	{
 		if (this->available())
 		{
-			rc = this->receiveRawMessage();
-			return rc;
+			return this->receiveRawMessage();
 		}
 		this->managedDelay(E32_LOOP_DELAY);
 	}
-
 	rc.status.code = ERR_E32_TIMEOUT;
 	return rc;
 }
@@ -917,11 +913,13 @@ RawResponseContainer LoRa_E32::receiveRawMessage()
     while(c >= 0) {
         rc.data[rc.length]= (uint8_t) c;
 		rc.length++;
+
+		if(rc.length >= MAX_SIZE_RX_PACKET_SIZE)
+			break;
+
         c = this->timedRead();
     }
-
 	this->cleanUARTBuffer();
-
 	rc.status.code = ERR_E32_SUCCESS;
 
 	return rc;
@@ -937,6 +935,6 @@ int LoRa_E32::timedRead()
         if(c >= 0) {
             return c;
         }
-    } while(millis() - this->_startMillis < this->_timeout);
+    } while(millis() - this->_startMillis < E32_TIMED_READ_TIMEOUT);
     return -1;     // -1 indicates timeout
 }
