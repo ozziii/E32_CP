@@ -49,7 +49,7 @@ extern "C"
 #define E32_SERVER_CHANNEL 3
 
 #define E32_WAKE_COMMAND "wake"
-#define E32_HANDUP_COMMAND "handup"
+#define E32_HANDUP_COMMAND "hup"
 
 #define E32_HANDUP_SEPARATOR_CHAR 47
 

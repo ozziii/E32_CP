@@ -252,7 +252,11 @@ class LoRa_E32 {
 
         int available();
 
-		
+		int8_t getAux(){ return this->auxPin; }
+
+        int8_t getM0(){ return this->m0Pin; }
+
+        int8_t getM1(){ return this->m1Pin;  }
 
 	private:
 		HardwareSerial* hs;
