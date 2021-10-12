@@ -32,7 +32,6 @@
 #define E32CP_h
 
 #include "Arduino.h"
-
 #include <functional>
 
 extern "C"
@@ -43,6 +42,19 @@ extern "C"
 
 #include <LoRa_E32.h>
 #include <AES.h>
+
+
+
+// Setup debug printing macros.
+#define E32CP_DEBUG
+
+#ifdef E32CP_DEBUG
+    #define E32CP_DEBUG_PRINTER Serial
+	#define E32CP_LOGD(format,...) { E32CP_DEBUG_PRINTER.printf(format,__VA_ARGS__); }
+#else
+	#define  E32CP_LOGD(format,...) {}
+#endif
+
 
 // SERVER ADDRESS
 #define E32_SERVER_ADDRESS 0
