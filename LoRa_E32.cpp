@@ -544,9 +544,10 @@ MODE_TYPE LoRa_E32::getMode()
 
 void LoRa_E32::writeProgramCommand(PROGRAM_COMMAND cmd)
 {
+#ifdef LoRa_E32_DEBUG
 	uint8_t CMD[3] = {cmd, cmd, cmd};
-	uint8_t size = this->serialDef.stream->write(CMD, 3);
-	DEBUG_PRINTLN(size);
+	DEBUG_PRINTLN(this->serialDef.stream->write(CMD, 3));
+#endif
 	this->managedDelay(50); //need ti check
 }
 

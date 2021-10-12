@@ -181,6 +181,7 @@ struct ResponseStructContainer {
 		free(this->data);
 	}
 };
+
 struct ResponseContainer {
 	String data;
 	ResponseStatus status;

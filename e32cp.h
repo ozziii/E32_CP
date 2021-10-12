@@ -46,11 +46,11 @@ extern "C"
 
 
 // Setup debug printing macros.
-#define E32CP_DEBUG
+//#define E32CP_DEBUG
 
 #ifdef E32CP_DEBUG
     #define E32CP_DEBUG_PRINTER Serial
-	#define E32CP_LOGD(format,...) { E32CP_DEBUG_PRINTER.printf(format,#__VA_ARGS__); }
+	#define E32CP_LOGD(format,...) { E32CP_DEBUG_PRINTER.printf(format,##__VA_ARGS__); }
 #else
 	#define  E32CP_LOGD(format,...) {}
 #endif
@@ -66,7 +66,6 @@ extern "C"
 #define E32_HANDUP_SEPARATOR_CHAR 47
 
 #define E32_WAKE_DELAY 4000
-
 #define E32_KEY_LENGTH 16
 
 typedef std::function<void(String Payload)> OnE32ReciveMessage;
