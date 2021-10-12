@@ -99,11 +99,10 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
     if (mode != ERR_E32_SUCCESS)
     {
         this->e32cp_stop_lissen = false;
-        Serial.println("ERROR SET MODE 1");
+        E32CP_LOGD("Error in set Mode WAKE UP \r\n");
         return false;
     }
 
-    Serial.println("SET MODE 1 OK");
 
     uint8_t addL = (uint8_t)(address & 0xff);
     uint8_t addH = (uint8_t)((address >> 8) & 0xff);
@@ -113,11 +112,11 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
     if (rs.code != ERR_E32_SUCCESS)
     {
         this->e32cp_stop_lissen = false;
-        Serial.printf("ERROR SEND WAKE : %s \n", rs.getResponseDescription().c_str());
+        E32CP_LOGD("Error in send Wake: %s \n", rs.getResponseDescription().c_str());
         return false;
     }
 
-    Serial.printf("SEND WAKE COMMAND OK : H:%u,L:%u,C:%u \n", addH, addL, channel);
+    E32CP_LOGD("Send Wake: : H:%u,L:%u,C:%u \n", addH, addL, channel);
 
     delay(2000);
 
@@ -126,23 +125,20 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
     if (mode != ERR_E32_SUCCESS)
     {
         this->e32cp_stop_lissen = false;
-        Serial.println("ERROR SET MODE 0");
+        E32CP_LOGD("Error in set Mode NORMAL \r\n");
         return false;
     }
 
-    Serial.println("SET MODE 0 OK");
 
     RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
     if (CriptedKey.status.code != ERR_E32_SUCCESS)
     {
-        Serial.printf("ERROR recieve key  : %s \n ", CriptedKey.status.getResponseDescription().c_str());
+        E32CP_LOGD("Error in recieve key  : %s \r\n", CriptedKey.status.getResponseDescription().c_str());
         return false;
     }
 
     this->e32cp_stop_lissen = false;
-
-    Serial.printf("RECIVE KEY OK \n ");
 
     if (CriptedKey.data == NULL)
     {
@@ -163,11 +159,11 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
     if (rs.code == ERR_E32_SUCCESS)
     {
         return true;
-        Serial.printf("SEND MESSAGE ok : H:%u,L:%u,C:%u \n", addH, addL, channel);
+        E32CP_LOGD("Send Message : H:%u,L:%u,C:%u \n", addH, addL, channel);
     }
     else
     {
-        Serial.printf("ERROR SEND MESSAGE  : H:%u,L:%u,C:%u \n", addH, addL, channel);
+        E32CP_LOGD("Error in send Mesage  : H:%u,L:%u,C:%u \n", addH, addL, channel);
         return false;
     }
 }
@@ -220,7 +216,7 @@ bool e32cp::sensorSend(String payload)
     if (rs.code != ERR_E32_SUCCESS)
     {
         this->e32cp_stop_lissen = false;
-        Serial.printf("SEND HENDUP: [%s] ", rs.getResponseDescription().c_str());
+        E32CP_LOGD("Send HandUp : [%s]  \r\n", rs.getResponseDescription().c_str());
         return false;
     }
 
@@ -230,7 +226,7 @@ bool e32cp::sensorSend(String payload)
 
     if (CriptedKey.status.code != ERR_E32_SUCCESS)
     {
-        Serial.printf("ERROR WAIT FOR KEY : [%s] ", CriptedKey.status.getResponseDescription().c_str());
+        E32CP_LOGD("Error timeout get key : [%s] \r\n", CriptedKey.status.getResponseDescription().c_str());
         return false;
     }
 
@@ -247,13 +243,13 @@ bool e32cp::sensorSend(String payload)
     if (rs.code == ERR_E32_SUCCESS)
     {
         
-        Serial.printf("SEND MESSAGE SUCCESS : [%s] ", rs.getResponseDescription().c_str());
+        E32CP_LOGD("Send Messge success : [%s] \r\n", rs.getResponseDescription().c_str());
         return true;
     }
     else
     {
         
-        Serial.printf("ERROR SEND MESSAGE : [%s] ", rs.getResponseDescription().c_str());
+        E32CP_LOGD("Error in send Message : [%s] ", rs.getResponseDescription().c_str());
         return false;
     }
 }

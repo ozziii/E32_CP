@@ -50,7 +50,7 @@ extern "C"
 
 #ifdef E32CP_DEBUG
     #define E32CP_DEBUG_PRINTER Serial
-	#define E32CP_LOGD(format,...) { E32CP_DEBUG_PRINTER.printf(format,__VA_ARGS__); }
+	#define E32CP_LOGD(format,...) { E32CP_DEBUG_PRINTER.printf(format,#__VA_ARGS__); }
 #else
 	#define  E32CP_LOGD(format,...) {}
 #endif
