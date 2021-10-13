@@ -274,10 +274,8 @@ void AES::SubBytes(uint8_t **state)
 
 void AES::ShiftRow(uint8_t **state, int i, int n)    // shift row i on n positions
 {
-  uint8_t t;
-  int k, j, index;
   uint8_t *tmp = new uint8_t[Nb];
-  for (j = 0; j < Nb; j++) {
+  for (int j = 0; j < Nb; j++) {
     tmp[j] = state[i][(j + n) % Nb];
   }
   memcpy(state[i], tmp, Nb * sizeof(uint8_t));
