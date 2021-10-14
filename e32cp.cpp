@@ -1,14 +1,14 @@
 #include <e32cp.h>
 #include <vector>
 
-static uint8_t E32_PSKEY[E32_KEY_LENGTH] =
+uint8_t pre_shared_key[E32_KEY_LENGTH] =
     {
         0x11, 0x22, 0x33, 0x44,
         0x55, 0x66, 0x77, 0x88,
         0x99, 0xAA, 0xBB, 0xCC,
         0xDD, 0xEE, 0xA2, 0xB3};
 
-static std::vector<String> splitString(const char *init, char c)
+std::vector<String> splitString(const char *init, char c)
 {
     std::vector<String> ret;
 
@@ -39,7 +39,6 @@ static std::vector<String> splitString(const char *init, char c)
 
 e32cp::e32cp(LoRa_E32 *lora, uint16_t address, uint8_t channel, bool bootloader_random)
 {
-    this->_aes = new AES(128);
     this->_lora = lora;
     this->_laddress = (uint8_t)(address & 0xff);
     this->_haddress = (uint8_t)((address >> 8) & 0xff);
@@ -145,12 +144,15 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
         return false;
     }
 
-    uint8_t *oneTimeKey = this->_aes->DecryptECB(CriptedKey.data, CriptedKey.length, E32_PSKEY);
+    uint8_t * oneTimeKey = oz_aes::decrypt_CBC(CriptedKey.data,CriptedKey.length,pre_shared_key,E32_KEY_LENGTH);
+    //this->_aes->DecryptECB(CriptedKey.data, CriptedKey.length, E32_PSKEY);
 
     CriptedKey.close();
 
     unsigned int out_len;
-    uint8_t *message = this->_aes->EncryptECB((uint8_t *)payload.c_str(), payload.length(), oneTimeKey, out_len);
+
+    uint8_t *message = oz_aes::encrypt_CBC(payload, oneTimeKey,CriptedKey.length, out_len);
+    //this->_aes->EncryptECB((uint8_t *)payload.c_str(), payload.length(), oneTimeKey, out_len);
 
     rs = this->_lora->sendFixedMessage(addH, addL, channel, (void *)message, (uint8_t)out_len);
 
@@ -158,8 +160,8 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 
     if (rs.code == ERR_E32_SUCCESS)
     {
-        return true;
         E32CP_LOGD("Send Message : H:%u,L:%u,C:%u \n", addH, addL, channel);
+        return true;
     }
     else
     {
@@ -173,7 +175,8 @@ String e32cp::sleepyIsWake()
     this->_lora->setMode(MODE_0_NORMAL);
     uint8_t *oneTimeKey = this->OneTimePassword();
     unsigned int out_len;
-    uint8_t *CriptOneTimeKey = this->_aes->EncryptECB(oneTimeKey, E32_KEY_LENGTH, E32_PSKEY, out_len);
+    uint8_t *CriptOneTimeKey = oz_aes::encrypt_CBC(oneTimeKey,E32_KEY_LENGTH,(uint8_t *)pre_shared_key,E32_KEY_LENGTH,out_len);
+    //this->_aes->EncryptECB(oneTimeKey, E32_KEY_LENGTH, E32_PSKEY, out_len);
 
     this->e32cp_stop_lissen = true;
 
@@ -192,7 +195,8 @@ String e32cp::sleepyIsWake()
     if (CriptMessage.status.code != ERR_E32_SUCCESS)
         return String();
 
-    uint8_t *message = this->_aes->DecryptECB(CriptMessage.data, CriptMessage.length, oneTimeKey);
+    uint8_t *message = oz_aes::decrypt_CBC(CriptMessage.data, CriptMessage.length,oneTimeKey,E32_KEY_LENGTH);
+    //this->_aes->DecryptECB(CriptMessage.data, CriptMessage.length, oneTimeKey);
 
     free(oneTimeKey);
     free(CriptOneTimeKey);
@@ -233,10 +237,12 @@ bool e32cp::sensorSend(String payload)
     if (CriptedKey.data == NULL)
         return false;
 
-    uint8_t *oneTimeKey = this->_aes->DecryptECB(CriptedKey.data, CriptedKey.length, E32_PSKEY);
+    uint8_t *oneTimeKey = oz_aes::decrypt_CBC(CriptedKey.data, CriptedKey.length, (uint8_t *)pre_shared_key,E32_KEY_LENGTH);
+    //this->_aes->DecryptECB(CriptedKey.data, CriptedKey.length, E32_PSKEY);
 
     unsigned int out_len;
-    uint8_t *cript_massage = this->_aes->EncryptECB((uint8_t *)payload.c_str(), payload.length(), oneTimeKey, out_len);
+    uint8_t *cript_massage = oz_aes::encrypt_CBC(payload,oneTimeKey,E32_KEY_LENGTH,out_len);
+    //this->_aes->EncryptECB((uint8_t *)payload.c_str(), payload.length(), oneTimeKey, out_len);
 
     rs = this->_lora->sendFixedMessage(0, E32_SERVER_ADDRESS, E32_SERVER_CHANNEL, cript_massage, (uint8_t)out_len);
 
@@ -277,7 +283,8 @@ String e32cp::ServerRecieve()
 
         unsigned int out_len;
 
-        uint8_t *CriptOneTimeKey = this->_aes->EncryptECB(oneTimeKey, E32_KEY_LENGTH, E32_PSKEY, out_len);
+        uint8_t *CriptOneTimeKey = oz_aes::encrypt_CBC(oneTimeKey, E32_KEY_LENGTH, (uint8_t *)pre_shared_key, E32_KEY_LENGTH,out_len);
+        //this->_aes->EncryptECB(oneTimeKey, E32_KEY_LENGTH, E32_PSKEY, out_len);
 
         this->e32cp_stop_lissen = true;
 
@@ -296,7 +303,8 @@ String e32cp::ServerRecieve()
         if (CriptMessage.status.code != ERR_E32_SUCCESS)
             return String();
 
-        uint8_t *message = this->_aes->DecryptECB(CriptMessage.data, CriptMessage.length, oneTimeKey);
+        uint8_t *message = oz_aes::decrypt_CBC(CriptMessage.data, CriptMessage.length, oneTimeKey,E32_KEY_LENGTH);
+        //this->_aes->DecryptECB(CriptMessage.data, CriptMessage.length, oneTimeKey);
 
         free(oneTimeKey);
         free(CriptOneTimeKey);

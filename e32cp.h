@@ -38,12 +38,12 @@ extern "C"
 {
 #include <bootloader_random.h>
 }
+
 #include "driver/uart.h"
 
 #include <LoRa_E32.h>
-#include <AES.h>
 
-
+#include <ozaes.h>
 
 // Setup debug printing macros.
 //#define E32CP_DEBUG
@@ -59,12 +59,9 @@ extern "C"
 // SERVER ADDRESS
 #define E32_SERVER_ADDRESS 0
 #define E32_SERVER_CHANNEL 3
-
 #define E32_WAKE_COMMAND "wake"
 #define E32_HANDUP_COMMAND "hup"
-
 #define E32_HANDUP_SEPARATOR_CHAR 47
-
 #define E32_WAKE_DELAY 4000
 #define E32_KEY_LENGTH 16
 
@@ -158,7 +155,6 @@ public:
 private:
      uint8_t _haddress, _laddress, _channel;
      LoRa_E32 *_lora;
-     AES *_aes;
      bool _bootloader_random  , e32cp_stop_lissen = false;
      OnE32ReciveMessage e32_function_callback;
 
