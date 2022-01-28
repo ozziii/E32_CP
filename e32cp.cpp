@@ -1,8 +1,7 @@
 #include <e32cp.h>
 #include <vector>
 
-
-#define MAX_MUTEX_DELAY_LOOP_ms    1000
+#define MAX_MUTEX_DELAY_LOOP_ms 1000
 #define MAX_MUTEX_DELAY_ROUTINE_ms 5000
 
 std::vector<String> splitString(const char *init, char c)
@@ -41,7 +40,7 @@ e32cp::e32cp()
 
 bool e32cp::begin(e32cp_config_t config)
 {
-    if(config.lora = nullptr)
+    if (config.lora == nullptr)
         return false;
 
     if (config.key_length != 32 && config.key_length != 24 && config.key_length != 16)
@@ -49,19 +48,18 @@ bool e32cp::begin(e32cp_config_t config)
 
     this->_pre_shared_key = config.pre_shared_key;
     this->_key_length = config.key_length;
-    this->_lora =  config.lora;
-    this->_laddress = (uint8_t)( config.address & 0xff);
-    this->_haddress = (uint8_t)(( config.address >> 8) & 0xff);
-    this->_channel =  config.channel;
-    this->_bootloader_random =  config.bootloader_random;
-    
-    
+    this->_lora = config.lora;
+    this->_address = config.address;
+    this->_channel = config.channel;
+    this->_bootloader_random = config.bootloader_random;
+
     return this->_lora->begin();
 }
 
-bool e32cp::config()
+bool e32cp::configure()
 {
-    if(xSemaphoreTake(this->uar_mutex,pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE ) return false;
+    if (xSemaphoreTake(this->uar_mutex, pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE)
+        return false;
 
     ResponseStructContainer c;
     c = this->_lora->getConfiguration();
@@ -73,9 +71,12 @@ bool e32cp::config()
         return false;
     }
 
+    uint8_t addL = (uint8_t)(this->_address & 0xff);
+    uint8_t addH = (uint8_t)((this->_address >> 8) & 0xff);
+
     Configuration configuration = *(Configuration *)c.data;
-    configuration.ADDH = this->_haddress;
-    configuration.ADDL = this->_laddress;
+    configuration.ADDH = addH;
+    configuration.ADDL = addL;
     configuration.CHAN = this->_channel;
     configuration.OPTION.wirelessWakeupTime = WAKE_UP_1750;
     configuration.SPED.uartParity = MODE_00_8N1;
@@ -95,9 +96,10 @@ bool e32cp::config()
         return false;
 }
 
-bool e32cp::sleepy_wake(uint16_t address, uint8_t channel, String payload)
+bool e32cp::wake_up_asleep(String payload, uint16_t address)
 {
-    if(xSemaphoreTake(this->uar_mutex,pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE ) return false;
+    if (xSemaphoreTake(this->uar_mutex, pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE)
+        return false;
 
     Status mode = this->_lora->setMode(MODE_1_WAKE_UP);
 
@@ -111,7 +113,7 @@ bool e32cp::sleepy_wake(uint16_t address, uint8_t channel, String payload)
     uint8_t addL = (uint8_t)(address & 0xff);
     uint8_t addH = (uint8_t)((address >> 8) & 0xff);
 
-    ResponseStatus rs = this->_lora->sendFixedMessage(addH, addL, channel, E32_WAKE_COMMAND);
+    ResponseStatus rs = this->_lora->sendFixedMessage(addH, addL, this->_channel, E32_WAKE_COMMAND);
 
     if (rs.code != ERR_E32_SUCCESS)
     {
@@ -120,7 +122,7 @@ bool e32cp::sleepy_wake(uint16_t address, uint8_t channel, String payload)
         return false;
     }
 
-    E32CP_LOGD("Send Wake: : H:%u,L:%u,C:%u \n", addH, addL, channel);
+    E32CP_LOGD("Send Wake: : H:%u,L:%u,C:%u \n", addH, addL, this->_channel);
 
     delay(2000);
 
@@ -142,7 +144,6 @@ bool e32cp::sleepy_wake(uint16_t address, uint8_t channel, String payload)
         return false;
     }
 
-
     if (CriptedKey.data == NULL)
     {
         xSemaphoreGive(this->uar_mutex);
@@ -157,7 +158,7 @@ bool e32cp::sleepy_wake(uint16_t address, uint8_t channel, String payload)
 
     uint8_t *message = oz_aes::encrypt_CBC(payload, oneTimeKey, CriptedKey.length, out_len);
 
-    rs = this->_lora->sendFixedMessage(addH, addL, channel, (void *)message, (uint8_t)out_len);
+    rs = this->_lora->sendFixedMessage(addH, addL, this->_channel, (void *)message, (uint8_t)out_len);
 
     free(message);
 
@@ -165,27 +166,28 @@ bool e32cp::sleepy_wake(uint16_t address, uint8_t channel, String payload)
 
     if (rs.code == ERR_E32_SUCCESS)
     {
-        E32CP_LOGD("Send Message : H:%u,L:%u,C:%u \n", addH, addL, channel);
-        
+        E32CP_LOGD("Send Message : H:%u,L:%u,C:%u \n", addH, addL, this->_channel);
+
         return true;
     }
     else
     {
-        E32CP_LOGD("Error in send Mesage  : H:%u,L:%u,C:%u \n", addH, addL, channel);
+        E32CP_LOGD("Error in send Mesage  : H:%u,L:%u,C:%u \n", addH, addL, this->_channel);
         return false;
     }
 }
 
-String e32cp::sleepy_is_wake()
+String e32cp::asleep_woke_up()
 {
-    if(xSemaphoreTake(this->uar_mutex,pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE ) return String();
+    if (xSemaphoreTake(this->uar_mutex, pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE)
+        return String();
 
     this->_lora->setMode(MODE_0_NORMAL);
     uint8_t *oneTimeKey = this->_one_time_password();
     unsigned int out_len;
     uint8_t *CriptOneTimeKey = oz_aes::encrypt_CBC(oneTimeKey, this->_key_length, (uint8_t *)this->_pre_shared_key, this->_key_length, out_len);
 
-    ResponseStatus rs = this->_lora->sendFixedMessage(0, E32_SERVER_ADDRESS, E32_SERVER_CHANNEL, CriptOneTimeKey, (uint8_t)out_len);
+    ResponseStatus rs = this->_lora->sendFixedMessage(0, E32_SERVER_ADDRESS, this->_channel, CriptOneTimeKey, (uint8_t)out_len);
 
     if (rs.code != ERR_E32_SUCCESS)
     {
@@ -209,17 +211,22 @@ String e32cp::sleepy_is_wake()
     return String((char *)message);
 }
 
-bool e32cp::sensor_send(String payload)
+bool e32cp::send(String payload, uint16_t address)
 {
-    if(xSemaphoreTake(this->uar_mutex,pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE ) return false;
+
+    if (xSemaphoreTake(this->uar_mutex, pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE)
+        return false;
+
+    uint8_t low_address = (uint8_t)(address & 0xff);
+    uint8_t higt_address = (uint8_t)((address >> 8) & 0xff);
 
     this->_lora->setMode(MODE_0_NORMAL);
 
     String hand_up_message = E32_HANDUP_COMMAND;
     hand_up_message += E32_HANDUP_SEPARATOR_CHAR;
-    hand_up_message += String(this->_laddress);
+    hand_up_message += String(this->_address);
 
-    ResponseStatus rs = this->_lora->sendFixedMessage(0, E32_SERVER_ADDRESS, E32_SERVER_CHANNEL, hand_up_message);
+    ResponseStatus rs = this->_lora->sendFixedMessage(higt_address, low_address, this->_channel, hand_up_message);
 
     if (rs.code != ERR_E32_SUCCESS)
     {
@@ -229,7 +236,6 @@ bool e32cp::sensor_send(String payload)
     }
 
     RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
-    
 
     if (CriptedKey.status.code != ERR_E32_SUCCESS)
     {
@@ -239,7 +245,7 @@ bool e32cp::sensor_send(String payload)
     }
 
     if (CriptedKey.data == NULL)
-    {  
+    {
         xSemaphoreGive(this->uar_mutex);
         return false;
     }
@@ -247,9 +253,10 @@ bool e32cp::sensor_send(String payload)
     uint8_t *oneTimeKey = oz_aes::decrypt_CBC(CriptedKey.data, CriptedKey.length, (uint8_t *)this->_pre_shared_key, this->_key_length);
 
     unsigned int out_len;
+
     uint8_t *cript_massage = oz_aes::encrypt_CBC(payload, oneTimeKey, this->_key_length, out_len);
 
-    rs = this->_lora->sendFixedMessage(0, E32_SERVER_ADDRESS, E32_SERVER_CHANNEL, cript_massage, (uint8_t)out_len);
+    rs = this->_lora->sendFixedMessage(higt_address, low_address, this->_channel, cript_massage, (uint8_t)out_len);
 
     xSemaphoreGive(this->uar_mutex);
 
@@ -265,6 +272,21 @@ bool e32cp::sensor_send(String payload)
     }
 }
 
+String e32cp::recive()
+{
+    if (xSemaphoreTake(this->uar_mutex, pdMS_TO_TICKS(MAX_MUTEX_DELAY_LOOP_ms)) == pdFALSE)
+        return String();
+
+    if (this->_lora->available() <= 0)
+        return String();
+
+    String ret = this->_server_recieve();
+
+    xSemaphoreGive(this->uar_mutex);
+
+    return String();
+}
+
 String e32cp::_server_recieve()
 {
 
@@ -278,55 +300,40 @@ String e32cp::_server_recieve()
     if (command.size() < 2)
         return String();
 
-    if (command[0].compareTo(E32_HANDUP_COMMAND))
+    if (!command[0].compareTo(E32_HANDUP_COMMAND))
+        return String();
+
+    uint16_t clientAddress = atoi(command[1].c_str());
+    uint8_t low_address = (uint8_t)(clientAddress & 0xff);
+    uint8_t higt_address = (uint8_t)((clientAddress >> 8) & 0xff);
+
+    this->_lora->setMode(MODE_0_NORMAL);
+
+    uint8_t *oneTimeKey = this->_one_time_password();
+
+    unsigned int out_len;
+
+    uint8_t *CriptOneTimeKey = oz_aes::encrypt_CBC(oneTimeKey, this->_key_length, (uint8_t *)this->_pre_shared_key, this->_key_length, out_len);
+
+    ResponseStatus rs = this->_lora->sendFixedMessage(higt_address, low_address, this->_channel, CriptOneTimeKey, (uint8_t)out_len);
+
+    if (rs.code != ERR_E32_SUCCESS)
     {
-
-        byte clientAddress = atoi(command[1].c_str());
-
-        this->_lora->setMode(MODE_0_NORMAL);
-
-        uint8_t *oneTimeKey = this->_one_time_password();
-
-        unsigned int out_len;
-
-        uint8_t *CriptOneTimeKey = oz_aes::encrypt_CBC(oneTimeKey, this->_key_length, (uint8_t *)this->_pre_shared_key, this->_key_length, out_len);
-
-        ResponseStatus rs = this->_lora->sendFixedMessage(0, clientAddress, E32_SERVER_CHANNEL, CriptOneTimeKey, (uint8_t)out_len);
-
-        if (rs.code != ERR_E32_SUCCESS)
-        {
-            return String();
-        }
-
-        RawResponseContainer CriptMessage = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
-
-        if (CriptMessage.status.code != ERR_E32_SUCCESS)
-            return String();
-
-        uint8_t *message = oz_aes::decrypt_CBC(CriptMessage.data, CriptMessage.length, oneTimeKey, this->_key_length);
-
-
-        free(oneTimeKey);
-        free(CriptOneTimeKey);
-        CriptMessage.close();
-
-        return String((char *)message);
+        return String();
     }
 
-    return String();
-}
+    RawResponseContainer CriptMessage = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
-String e32cp::available()
-{
-    if(xSemaphoreTake(this->uar_mutex,pdMS_TO_TICKS(MAX_MUTEX_DELAY_LOOP_ms)) == pdFALSE ) return String();
-    
-    if(this->_lora->available() <= 0) return String();
-   
-    String ret = this->_server_recieve();
+    if (CriptMessage.status.code != ERR_E32_SUCCESS)
+        return String();
 
-    xSemaphoreGive(this->uar_mutex);
+    uint8_t *message = oz_aes::decrypt_CBC(CriptMessage.data, CriptMessage.length, oneTimeKey, this->_key_length);
 
-    return String();
+    free(oneTimeKey);
+    free(CriptOneTimeKey);
+    CriptMessage.close();
+
+    return String((char *)message);
 }
 
 uint8_t *e32cp::_one_time_password()

@@ -68,89 +68,97 @@ extern "C"
 #define E32_HANDUP_SEPARATOR_CHAR 47
 #define E32_WAKE_DELAY 4000
 
-typedef struct {
-    LoRa_E32 *                     lora;                             /*!< */
-    uint8_t *                      pre_shared_key;                   /*!< */
-    uint8_t                        key_length;                      /*!< */
-    uint16_t                       address = E32_SERVER_ADDRESS;     /*!< */
-    uint8_t                        channel = E32_SERVER_CHANNEL;     /*!< */
-    bool                           bootloader_random = false;        /*!< */
+typedef struct
+{
+    LoRa_E32 *lora;                        /*!< */
+    uint8_t *pre_shared_key;               /*!< */
+    uint8_t key_length;                    /*!< */
+    uint16_t address = E32_SERVER_ADDRESS; /*!< */
+    uint8_t channel = E32_SERVER_CHANNEL;  /*!< */
+    bool bootloader_random = false;        /*!< */
 } e32cp_config_t;
-
 
 class e32cp
 {
 public:
     /**
      * @brief Construct a new e32cp object
-     * 
+     *
      */
     e32cp();
 
-
+    /**
+     * @brief initialize uart and set e32 in normal mode call on normal reboot and after esp32 is wake up
+     *
+     * @param config
+     * @return true if sucess
+     * @return false on error
+     */
+    bool begin(e32cp_config_t config);
 
     /**
-     * @brief 
+     * @brief Configure e32 not call this functiono afret esp32 wake up ONLY after rebooy
+     *
+     *
+     * @return true  if sucess
+     * @return false on error
+     */
+    bool configure();
+
+    /**
+     * @brief  Call to send command to a asleep client
+     * Send wake command to asleep client and wait for key. on Key recive send cripted payload  
+     * Use combined with @asleep_woke_up()
+     * Normaly used by server
+     *
+     * Send Wake --> wait for Key --> Send cripted Payload
      * 
-     * @param config 
-     * @return true 
-     * @return false 
-     */
-    bool begin(e32cp_config_t config );
-    
-    /**
-     *
-     *
+     * @param address client address
+     * @param payload message to send to the client
+     * @return false on error
      *
      */
-    bool config();
+    bool wake_up_asleep(String payload, uint16_t address);
 
     /**
-     * @brief  Send command to wake sleppy client
-     * Send Wake --> wait for Key --> Send Payload
+     * @brief After esp32 wake up send key to server and wait for payload 
+     * use compined with @wake_up_asleep(uint16_t address, uint8_t channel, String payload)
+     * Normaly used by client 
      *
-     *
-     *
-     *
+     * Wake by interrupt -->  Send key --> wait for payload
+     * 
+     * @return String payload form server
      */
-    bool sleepy_wake(uint16_t address, uint8_t channel, String payload);
+    String asleep_woke_up();
 
     /**
-     * @brief sleppy client  recive command
-     * After wake -->  Send key --> wait for payload
-     *
-     *
+     * @brief Send mesage to reciver 
+     * Normaly used by client 
+     * 
+     * Send Request --> wait for key --> send cripted payload
+     * 
+     * 
+     * @param payload message to send to the client
+     * @return false on error
      */
-    String sleepy_is_wake();
+    bool send(String payload, uint16_t address = E32_SERVER_ADDRESS);
 
     /**
-     * @brief Sensor client send data
-     * Send Request --> wait for key --> send data
+     * @brief recive data from client call this function in loop()
+     * Normaly used by server
+     * 
+     * On recieve request -> send key -> recieve data
      *
-     *
+     * @return String if data is avalable else empty if data not coming
      */
-    bool sensor_send(String payload);
-
-
-    /**
-     * @brief on Recieve request -> send key -> recieve data
-     *
-     *
-     */
-    String available();
-
+    String recive();
 
 private:
-     /**
-     * @brief on Recieve request -> send key -> recieve data
-     *
-     *
-     */
     String _server_recieve();
 
-
-    uint8_t * _one_time_password();
-    uint8_t _haddress, _laddress, _channel , _key_length;
+    uint8_t *_one_time_password();
+    uint16_t _address;
+    uint8_t _channel, _key_length;
     LoRa_E32 *_lora;
     bool _bootloader_random;
     uint8_t *_pre_shared_key;
