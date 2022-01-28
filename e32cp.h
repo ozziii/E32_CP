@@ -1,4 +1,4 @@
-/*   
+/*
  * E32 COMUNICATION PROTOCOL
  *
  * AUTHOR:  OZIIII
@@ -46,15 +46,19 @@ extern "C"
 #include <ozaes.h>
 
 // Setup debug printing macros.
-//#define E32CP_DEBUG
+#define E32CP_DEBUG
 
 #ifdef E32CP_DEBUG
-    #define E32CP_DEBUG_PRINTER Serial
-	#define E32CP_LOGD(format,...) { E32CP_DEBUG_PRINTER.printf(format,##__VA_ARGS__); }
+#define E32CP_DEBUG_PRINTER Serial
+#define E32CP_LOGD(format, ...)                            \
+    {                                                      \
+        E32CP_DEBUG_PRINTER.printf(format, ##__VA_ARGS__); \
+    }
 #else
-	#define  E32CP_LOGD(format,...) {}
+#define E32CP_LOGD(format, ...) \
+    {                           \
+    }
 #endif
-
 
 // SERVER ADDRESS
 #define E32_SERVER_ADDRESS 0
@@ -63,102 +67,94 @@ extern "C"
 #define E32_HANDUP_COMMAND "hup"
 #define E32_HANDUP_SEPARATOR_CHAR 47
 #define E32_WAKE_DELAY 4000
-#define E32_KEY_LENGTH 16
 
-typedef std::function<void(String Payload)> OnE32ReciveMessage;
+typedef struct {
+    LoRa_E32 *                     lora;                             /*!< */
+    uint8_t *                      pre_shared_key;                   /*!< */
+    uint8_t                        key_length;                      /*!< */
+    uint16_t                       address = E32_SERVER_ADDRESS;     /*!< */
+    uint8_t                        channel = E32_SERVER_CHANNEL;     /*!< */
+    bool                           bootloader_random = false;        /*!< */
+} e32cp_config_t;
+
 
 class e32cp
 {
 public:
-     /**
-         * Client CTOR
-         * 
-         * 
-         * 
-         */
-     e32cp(LoRa_E32 *lora, uint16_t address = E32_SERVER_ADDRESS, uint8_t channel = E32_SERVER_CHANNEL, bool bootloader_random = false);
-
-     /**
-         *   MAKE ASYCRONUS URAT FUNCTION ONLY FOR HARDWARE SERIAL
-         * 
-         * 
-         */
-     void attachInterrupt(OnE32ReciveMessage callback);
-
-     /**
-         * 
-         */
-     bool begin();
-
-     /**
-         * 
-         * 
-         * 
-         */
-     bool config();
-
-     /**
-         * Send command to wake sleppy client
-         * Send Wake --> wait for Key --> Send Payload 
-         * 
-         * 
-         * 
-         * 
-         */
-     bool sleepyWake(uint16_t address, uint8_t channel, String payload);
-
-     /**
-         * sleppy client  recive command
-         * After wake -->  Send key --> wait for payload
-         * 
-         * 
-         * 
-         * 
-         */
-     String sleepyIsWake();
-
-     /**
-         * Sensor client send data
-         * Send Request --> wait for key --> send data
-         * 
-         * 
-         * 
-         * 
-         */
-     bool sensorSend(String payload);
-
-     /**
-         * Recieve request -> send key -> recieve data
-         * 
-         * 
-         */
-     String ServerRecieve();
-
-     /**
-         * 
-         * 
-         * 
-         * 
-         * 
-         */
-     void loop();
+    /**
+     * @brief Construct a new e32cp object
+     * 
+     */
+    e32cp();
 
 
-     /**
-      * 
-      * 
-      * 
-      */
-     bool available();
+
+    /**
+     * @brief 
+     * 
+     * @param config 
+     * @return true 
+     * @return false 
+     */
+    bool begin(e32cp_config_t config );
+    
+    /**
+     *
+     *
+     *
+     */
+    bool config();
+
+    /**
+     * @brief  Send command to wake sleppy client
+     * Send Wake --> wait for Key --> Send Payload
+     *
+     *
+     *
+     *
+     */
+    bool sleepy_wake(uint16_t address, uint8_t channel, String payload);
+
+    /**
+     * @brief sleppy client  recive command
+     * After wake -->  Send key --> wait for payload
+     *
+     *
+     */
+    String sleepy_is_wake();
+
+    /**
+     * @brief Sensor client send data
+     * Send Request --> wait for key --> send data
+     *
+     *
+     */
+    bool sensor_send(String payload);
+
+
+    /**
+     * @brief on Recieve request -> send key -> recieve data
+     *
+     *
+     */
+    String available();
 
 
 private:
-     uint8_t _haddress, _laddress, _channel;
-     LoRa_E32 *_lora;
-     bool _bootloader_random  , e32cp_stop_lissen = false;
-     OnE32ReciveMessage e32_function_callback;
+     /**
+     * @brief on Recieve request -> send key -> recieve data
+     *
+     *
+     */
+    String _server_recieve();
 
-     uint8_t *OneTimePassword();
+
+    uint8_t * _one_time_password();
+    uint8_t _haddress, _laddress, _channel , _key_length;
+    LoRa_E32 *_lora;
+    bool _bootloader_random;
+    uint8_t *_pre_shared_key;
+    SemaphoreHandle_t uar_mutex;
 };
 
 #endif

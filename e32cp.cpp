@@ -1,12 +1,9 @@
 #include <e32cp.h>
 #include <vector>
 
-uint8_t pre_shared_key[E32_KEY_LENGTH] =
-    {
-        0x11, 0x22, 0x33, 0x44,
-        0x55, 0x66, 0x77, 0x88,
-        0x99, 0xAA, 0xBB, 0xCC,
-        0xDD, 0xEE, 0xA2, 0xB3};
+
+#define MAX_MUTEX_DELAY_LOOP_ms    1000
+#define MAX_MUTEX_DELAY_ROUTINE_ms 5000
 
 std::vector<String> splitString(const char *init, char c)
 {
@@ -37,34 +34,42 @@ std::vector<String> splitString(const char *init, char c)
     return ret;
 }
 
-e32cp::e32cp(LoRa_E32 *lora, uint16_t address, uint8_t channel, bool bootloader_random)
+e32cp::e32cp()
 {
-    this->_lora = lora;
-    this->_laddress = (uint8_t)(address & 0xff);
-    this->_haddress = (uint8_t)((address >> 8) & 0xff);
-    this->_channel = channel;
-    this->_bootloader_random = bootloader_random;
-    this->e32cp_stop_lissen = false;
+    this->uar_mutex = xSemaphoreCreateMutex();
 }
 
-void e32cp::attachInterrupt(OnE32ReciveMessage callback)
+bool e32cp::begin(e32cp_config_t config)
 {
-    e32_function_callback = callback;
-}
+    if(config.lora = nullptr)
+        return false;
 
-bool e32cp::begin()
-{
+    if (config.key_length != 32 && config.key_length != 24 && config.key_length != 16)
+        return false;
+
+    this->_pre_shared_key = config.pre_shared_key;
+    this->_key_length = config.key_length;
+    this->_lora =  config.lora;
+    this->_laddress = (uint8_t)( config.address & 0xff);
+    this->_haddress = (uint8_t)(( config.address >> 8) & 0xff);
+    this->_channel =  config.channel;
+    this->_bootloader_random =  config.bootloader_random;
+    
+    
     return this->_lora->begin();
 }
 
 bool e32cp::config()
 {
+    if(xSemaphoreTake(this->uar_mutex,pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE ) return false;
+
     ResponseStructContainer c;
     c = this->_lora->getConfiguration();
     // It's important get configuration pointer before all other operation
     if (c.status.code != ERR_E32_SUCCESS || c.data == NULL)
     {
         c.close();
+        xSemaphoreGive(this->uar_mutex);
         return false;
     }
 
@@ -82,6 +87,7 @@ bool e32cp::config()
     ResponseStatus rs = this->_lora->setConfiguration(configuration, WRITE_CFG_PWR_DWN_SAVE);
 
     c.close();
+    xSemaphoreGive(this->uar_mutex);
 
     if (rs.code == ERR_E32_SUCCESS)
         return true;
@@ -89,19 +95,18 @@ bool e32cp::config()
         return false;
 }
 
-bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
+bool e32cp::sleepy_wake(uint16_t address, uint8_t channel, String payload)
 {
-    this->e32cp_stop_lissen = true;
+    if(xSemaphoreTake(this->uar_mutex,pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE ) return false;
 
     Status mode = this->_lora->setMode(MODE_1_WAKE_UP);
 
     if (mode != ERR_E32_SUCCESS)
     {
-        this->e32cp_stop_lissen = false;
+        xSemaphoreGive(this->uar_mutex);
         E32CP_LOGD("Error in set Mode WAKE UP \r\n");
         return false;
     }
-
 
     uint8_t addL = (uint8_t)(address & 0xff);
     uint8_t addH = (uint8_t)((address >> 8) & 0xff);
@@ -110,7 +115,7 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 
     if (rs.code != ERR_E32_SUCCESS)
     {
-        this->e32cp_stop_lissen = false;
+        xSemaphoreGive(this->uar_mutex);
         E32CP_LOGD("Error in send Wake: %s \n", rs.getResponseDescription().c_str());
         return false;
     }
@@ -123,44 +128,45 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
 
     if (mode != ERR_E32_SUCCESS)
     {
-        this->e32cp_stop_lissen = false;
+        xSemaphoreGive(this->uar_mutex);
         E32CP_LOGD("Error in set Mode NORMAL \r\n");
         return false;
     }
-
 
     RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
     if (CriptedKey.status.code != ERR_E32_SUCCESS)
     {
+        xSemaphoreGive(this->uar_mutex);
         E32CP_LOGD("Error in recieve key  : %s \r\n", CriptedKey.status.getResponseDescription().c_str());
         return false;
     }
 
-    this->e32cp_stop_lissen = false;
 
     if (CriptedKey.data == NULL)
     {
+        xSemaphoreGive(this->uar_mutex);
         return false;
     }
 
-    uint8_t * oneTimeKey = oz_aes::decrypt_CBC(CriptedKey.data,CriptedKey.length,pre_shared_key,E32_KEY_LENGTH);
-    //this->_aes->DecryptECB(CriptedKey.data, CriptedKey.length, E32_PSKEY);
+    uint8_t *oneTimeKey = oz_aes::decrypt_CBC(CriptedKey.data, CriptedKey.length, this->_pre_shared_key, this->_key_length);
 
     CriptedKey.close();
 
     unsigned int out_len;
 
-    uint8_t *message = oz_aes::encrypt_CBC(payload, oneTimeKey,CriptedKey.length, out_len);
-    //this->_aes->EncryptECB((uint8_t *)payload.c_str(), payload.length(), oneTimeKey, out_len);
+    uint8_t *message = oz_aes::encrypt_CBC(payload, oneTimeKey, CriptedKey.length, out_len);
 
     rs = this->_lora->sendFixedMessage(addH, addL, channel, (void *)message, (uint8_t)out_len);
 
     free(message);
 
+    xSemaphoreGive(this->uar_mutex);
+
     if (rs.code == ERR_E32_SUCCESS)
     {
         E32CP_LOGD("Send Message : H:%u,L:%u,C:%u \n", addH, addL, channel);
+        
         return true;
     }
     else
@@ -170,33 +176,31 @@ bool e32cp::sleepyWake(uint16_t address, uint8_t channel, String payload)
     }
 }
 
-String e32cp::sleepyIsWake()
+String e32cp::sleepy_is_wake()
 {
-    this->_lora->setMode(MODE_0_NORMAL);
-    uint8_t *oneTimeKey = this->OneTimePassword();
-    unsigned int out_len;
-    uint8_t *CriptOneTimeKey = oz_aes::encrypt_CBC(oneTimeKey,E32_KEY_LENGTH,(uint8_t *)pre_shared_key,E32_KEY_LENGTH,out_len);
-    //this->_aes->EncryptECB(oneTimeKey, E32_KEY_LENGTH, E32_PSKEY, out_len);
+    if(xSemaphoreTake(this->uar_mutex,pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE ) return String();
 
-    this->e32cp_stop_lissen = true;
+    this->_lora->setMode(MODE_0_NORMAL);
+    uint8_t *oneTimeKey = this->_one_time_password();
+    unsigned int out_len;
+    uint8_t *CriptOneTimeKey = oz_aes::encrypt_CBC(oneTimeKey, this->_key_length, (uint8_t *)this->_pre_shared_key, this->_key_length, out_len);
 
     ResponseStatus rs = this->_lora->sendFixedMessage(0, E32_SERVER_ADDRESS, E32_SERVER_CHANNEL, CriptOneTimeKey, (uint8_t)out_len);
 
     if (rs.code != ERR_E32_SUCCESS)
     {
-        this->e32cp_stop_lissen = false;
+        xSemaphoreGive(this->uar_mutex);
         return String();
     }
 
     RawResponseContainer CriptMessage = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
-    this->e32cp_stop_lissen = false;
+    xSemaphoreGive(this->uar_mutex);
 
     if (CriptMessage.status.code != ERR_E32_SUCCESS)
         return String();
 
-    uint8_t *message = oz_aes::decrypt_CBC(CriptMessage.data, CriptMessage.length,oneTimeKey,E32_KEY_LENGTH);
-    //this->_aes->DecryptECB(CriptMessage.data, CriptMessage.length, oneTimeKey);
+    uint8_t *message = oz_aes::decrypt_CBC(CriptMessage.data, CriptMessage.length, oneTimeKey, this->_key_length);
 
     free(oneTimeKey);
     free(CriptOneTimeKey);
@@ -205,63 +209,65 @@ String e32cp::sleepyIsWake()
     return String((char *)message);
 }
 
-bool e32cp::sensorSend(String payload)
+bool e32cp::sensor_send(String payload)
 {
+    if(xSemaphoreTake(this->uar_mutex,pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE ) return false;
+
     this->_lora->setMode(MODE_0_NORMAL);
 
     String hand_up_message = E32_HANDUP_COMMAND;
-    hand_up_message += E32_HANDUP_SEPARATOR_CHAR; 
+    hand_up_message += E32_HANDUP_SEPARATOR_CHAR;
     hand_up_message += String(this->_laddress);
-
-    this->e32cp_stop_lissen = true;
 
     ResponseStatus rs = this->_lora->sendFixedMessage(0, E32_SERVER_ADDRESS, E32_SERVER_CHANNEL, hand_up_message);
 
     if (rs.code != ERR_E32_SUCCESS)
     {
-        this->e32cp_stop_lissen = false;
         E32CP_LOGD("Send HandUp : [%s]  \r\n", rs.getResponseDescription().c_str());
+        xSemaphoreGive(this->uar_mutex);
         return false;
     }
 
     RawResponseContainer CriptedKey = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
-
-    this->e32cp_stop_lissen = false;
+    
 
     if (CriptedKey.status.code != ERR_E32_SUCCESS)
     {
         E32CP_LOGD("Error timeout get key : [%s] \r\n", CriptedKey.status.getResponseDescription().c_str());
+        xSemaphoreGive(this->uar_mutex);
         return false;
     }
 
     if (CriptedKey.data == NULL)
+    {  
+        xSemaphoreGive(this->uar_mutex);
         return false;
+    }
 
-    uint8_t *oneTimeKey = oz_aes::decrypt_CBC(CriptedKey.data, CriptedKey.length, (uint8_t *)pre_shared_key,E32_KEY_LENGTH);
-    //this->_aes->DecryptECB(CriptedKey.data, CriptedKey.length, E32_PSKEY);
+    uint8_t *oneTimeKey = oz_aes::decrypt_CBC(CriptedKey.data, CriptedKey.length, (uint8_t *)this->_pre_shared_key, this->_key_length);
 
     unsigned int out_len;
-    uint8_t *cript_massage = oz_aes::encrypt_CBC(payload,oneTimeKey,E32_KEY_LENGTH,out_len);
-    //this->_aes->EncryptECB((uint8_t *)payload.c_str(), payload.length(), oneTimeKey, out_len);
+    uint8_t *cript_massage = oz_aes::encrypt_CBC(payload, oneTimeKey, this->_key_length, out_len);
 
     rs = this->_lora->sendFixedMessage(0, E32_SERVER_ADDRESS, E32_SERVER_CHANNEL, cript_massage, (uint8_t)out_len);
 
+    xSemaphoreGive(this->uar_mutex);
+
     if (rs.code == ERR_E32_SUCCESS)
     {
-        
         E32CP_LOGD("Send Messge success : [%s] \r\n", rs.getResponseDescription().c_str());
         return true;
     }
     else
     {
-        
         E32CP_LOGD("Error in send Message : [%s] ", rs.getResponseDescription().c_str());
         return false;
     }
 }
 
-String e32cp::ServerRecieve()
+String e32cp::_server_recieve()
 {
+
     ResponseContainer rc = this->_lora->receiveMessage();
 
     if (rc.status.code != ERR_E32_SUCCESS)
@@ -279,32 +285,26 @@ String e32cp::ServerRecieve()
 
         this->_lora->setMode(MODE_0_NORMAL);
 
-        uint8_t *oneTimeKey = this->OneTimePassword();
+        uint8_t *oneTimeKey = this->_one_time_password();
 
         unsigned int out_len;
 
-        uint8_t *CriptOneTimeKey = oz_aes::encrypt_CBC(oneTimeKey, E32_KEY_LENGTH, (uint8_t *)pre_shared_key, E32_KEY_LENGTH,out_len);
-        //this->_aes->EncryptECB(oneTimeKey, E32_KEY_LENGTH, E32_PSKEY, out_len);
-
-        this->e32cp_stop_lissen = true;
+        uint8_t *CriptOneTimeKey = oz_aes::encrypt_CBC(oneTimeKey, this->_key_length, (uint8_t *)this->_pre_shared_key, this->_key_length, out_len);
 
         ResponseStatus rs = this->_lora->sendFixedMessage(0, clientAddress, E32_SERVER_CHANNEL, CriptOneTimeKey, (uint8_t)out_len);
 
         if (rs.code != ERR_E32_SUCCESS)
         {
-            this->e32cp_stop_lissen = false;
             return String();
         }
 
         RawResponseContainer CriptMessage = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
 
-        this->e32cp_stop_lissen = false;
-
         if (CriptMessage.status.code != ERR_E32_SUCCESS)
             return String();
 
-        uint8_t *message = oz_aes::decrypt_CBC(CriptMessage.data, CriptMessage.length, oneTimeKey,E32_KEY_LENGTH);
-        //this->_aes->DecryptECB(CriptMessage.data, CriptMessage.length, oneTimeKey);
+        uint8_t *message = oz_aes::decrypt_CBC(CriptMessage.data, CriptMessage.length, oneTimeKey, this->_key_length);
+
 
         free(oneTimeKey);
         free(CriptOneTimeKey);
@@ -316,42 +316,30 @@ String e32cp::ServerRecieve()
     return String();
 }
 
-void e32cp::loop()
+String e32cp::available()
 {
-    if (this->available())
-    {
-        String result = this->ServerRecieve();
-        if (result.length() > 0)
-            e32_function_callback(result);
-    }
+    if(xSemaphoreTake(this->uar_mutex,pdMS_TO_TICKS(MAX_MUTEX_DELAY_LOOP_ms)) == pdFALSE ) return String();
+    
+    if(this->_lora->available() <= 0) return String();
+   
+    String ret = this->_server_recieve();
+
+    xSemaphoreGive(this->uar_mutex);
+
+    return String();
 }
 
-bool e32cp::available()
+uint8_t *e32cp::_one_time_password()
 {
-    if (this->e32cp_stop_lissen)
-        return false;
-
-    return (this->_lora->available() > 0);
-}
-
-uint8_t *e32cp::OneTimePassword()
-{
-    uint8_t *newKey = (uint8_t *)malloc(E32_KEY_LENGTH);
+    uint8_t *newKey = (uint8_t *)malloc(this->_key_length);
 
     if (this->_bootloader_random)
         bootloader_random_enable();
 
-    bootloader_fill_random((void *)newKey, E32_KEY_LENGTH);
+    bootloader_fill_random((void *)newKey, this->_key_length);
 
     if (this->_bootloader_random)
         bootloader_random_disable();
-
-    /*
-    for(int i = 0 ; i< E32_KEY_LENGTH ; i++)
-    {
-        newKey[i] = (uint8_t)esp_random();
-    }
-    */
 
     return newKey;
 }
