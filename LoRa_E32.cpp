@@ -483,10 +483,11 @@ method to set the mode (program, normal, etc.)
 Status LoRa_E32::setMode(MODE_TYPE mode)
 {
 
+	if(this->mode == mode) return ERR_E32_SUCCESS;
 	// data sheet claims module needs some extra time after mode setting (2ms)
 	// most of my projects uses 10 ms, but 40ms is safer
 
-	this->managedDelay(40);
+	this->managedDelay(20);
 
 	if (this->m0Pin == -1 && this->m1Pin == -1)
 	{
