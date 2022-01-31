@@ -259,6 +259,8 @@ class LoRa_E32 {
 
         int8_t getM1(){ return this->m1Pin;  }
 
+		Stream * getStream(){ return this->serialDef.stream; }
+
 	private:
 		HardwareSerial* hs;
 
@@ -316,6 +318,9 @@ class LoRa_E32 {
 		  Stream *stream;
 		};
 		NeedsStream serialDef;
+
+
+		
 
         MODE_TYPE mode = MODE_0_NORMAL;
 
