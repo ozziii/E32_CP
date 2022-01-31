@@ -38,6 +38,7 @@ LoRa_E32::LoRa_E32(byte txE32pin, byte rxE32pin, UART_BPS_RATE bpsRate)
 
 	this->bpsRate = bpsRate;
 }
+
 LoRa_E32::LoRa_E32(byte txE32pin, byte rxE32pin, byte auxPin, UART_BPS_RATE bpsRate)
 {
 	this->txE32pin = txE32pin;
@@ -80,6 +81,7 @@ LoRa_E32::LoRa_E32(HardwareSerial *serial, UART_BPS_RATE bpsRate)
 
 	this->bpsRate = bpsRate;
 }
+
 LoRa_E32::LoRa_E32(HardwareSerial *serial, byte auxPin, UART_BPS_RATE bpsRate)
 { // , uint32_t serialConfig
 	this->txE32pin = txE32pin;
@@ -94,6 +96,7 @@ LoRa_E32::LoRa_E32(HardwareSerial *serial, byte auxPin, UART_BPS_RATE bpsRate)
 
 	this->bpsRate = bpsRate;
 }
+
 LoRa_E32::LoRa_E32(HardwareSerial *serial, byte auxPin, byte m0Pin, byte m1Pin, UART_BPS_RATE bpsRate)
 { //, uint32_t serialConfig
 	this->txE32pin = txE32pin;
@@ -129,6 +132,7 @@ LoRa_E32::LoRa_E32(byte txE32pin, byte rxE32pin, HardwareSerial *serial, UART_BP
 
 	this->bpsRate = bpsRate;
 }
+
 LoRa_E32::LoRa_E32(byte txE32pin, byte rxE32pin, HardwareSerial *serial, byte auxPin, UART_BPS_RATE bpsRate, uint32_t serialConfig)
 {
 	this->txE32pin = txE32pin;
@@ -145,6 +149,7 @@ LoRa_E32::LoRa_E32(byte txE32pin, byte rxE32pin, HardwareSerial *serial, byte au
 
 	this->bpsRate = bpsRate;
 }
+
 LoRa_E32::LoRa_E32(byte txE32pin, byte rxE32pin, HardwareSerial *serial, byte auxPin, byte m0Pin, byte m1Pin, UART_BPS_RATE bpsRate, uint32_t serialConfig)
 {
 	this->txE32pin = txE32pin;
@@ -318,12 +323,11 @@ Status LoRa_E32::waitCompleteResponse(unsigned long timeout, unsigned int waitNo
 		// if you can't use aux pin, use 4K7 pullup with Arduino
 		// you may need to adjust this value if transmissions fail
 		this->managedDelay(waitNoAux);
-		DEBUG_PRINTLN(F("Wait no AUX pin!"));
+		DEBUG_PRINTLN("Wait no AUX pin!");
 	}
 
 	// per data sheet control after aux goes high is 2ms so delay for at least that long)
 	this->managedDelay(20);
-	DEBUG_PRINTLN(F("Complete!"));
 	return result;
 }
 
@@ -402,10 +406,7 @@ Status LoRa_E32::sendStruct(void *structureManaged, uint16_t size_)
 	uint8_t len = this->serialDef.stream->write((uint8_t *)structureManaged, size_);
 	if (len != size_)
 	{
-		DEBUG_PRINT(F("Send... len:"))
-		DEBUG_PRINT(len);
-		DEBUG_PRINT(F(" size:"))
-		DEBUG_PRINT(size_);
+		DEBUG_PRINT("Send... len: %u size: %u ",len,size_);
 		if (len == 0)
 		{
 			result = ERR_E32_NO_RESPONSE_FROM_DEVICE;
@@ -421,10 +422,9 @@ Status LoRa_E32::sendStruct(void *structureManaged, uint16_t size_)
 	result = this->waitCompleteResponse(1000);
 	if (result != ERR_E32_SUCCESS)
 		return result;
-	DEBUG_PRINT(F("Clear buffer..."))
-	this->cleanUARTBuffer();
 
-	DEBUG_PRINTLN(F("ok!"))
+	DEBUG_PRINT("Clear buffer...");
+	this->cleanUARTBuffer();
 
 	return result;
 }
@@ -448,10 +448,7 @@ Status LoRa_E32::receiveStruct(void *structureManaged, uint16_t size_)
 
 	uint8_t len = this->serialDef.stream->readBytes((uint8_t *)structureManaged, size_);
 
-	DEBUG_PRINT("Available buffer: ");
-	DEBUG_PRINT(len);
-	DEBUG_PRINT(" structure size: ");
-	DEBUG_PRINTLN(size_);
+	DEBUG_PRINT("Available buffer: %u structure size: %u",len,size_);
 
 	if (len != size_)
 	{
@@ -483,15 +480,15 @@ method to set the mode (program, normal, etc.)
 Status LoRa_E32::setMode(MODE_TYPE mode)
 {
 
-	if(this->mode == mode) return ERR_E32_SUCCESS;
+	//if(this->mode == mode) return ERR_E32_SUCCESS;
 	// data sheet claims module needs some extra time after mode setting (2ms)
 	// most of my projects uses 10 ms, but 40ms is safer
 
-	this->managedDelay(20);
+	this->managedDelay(40);
 
 	if (this->m0Pin == -1 && this->m1Pin == -1)
 	{
-		DEBUG_PRINTLN(F("The M0 and M1 pins is not set, this mean that you are connect directly the pins as you need!"))
+		DEBUG_PRINTLN("The M0 and M1 pins is not set, this mean that you are connect directly the pins as you need!");
 	}
 	else
 	{
@@ -543,12 +540,10 @@ MODE_TYPE LoRa_E32::getMode()
 	return this->mode;
 }
 
-void LoRa_E32::writeProgramCommand(PROGRAM_COMMAND cmd)
+void LoRa_E32::writeProgramCommand(PROGRAM_COMMAND cmd) 
 {
-#ifdef LoRa_E32_DEBUG
 	uint8_t CMD[3] = {cmd, cmd, cmd};
-	DEBUG_PRINTLN(this->serialDef.stream->write(CMD, 3));
-#endif
+	this->serialDef.stream->write(CMD, 3);
 	this->managedDelay(50); //need ti check
 }
 
@@ -571,24 +566,15 @@ ResponseStructContainer LoRa_E32::getConfiguration()
 	rc.data = malloc(sizeof(Configuration));
 	rc.status.code = this->receiveStruct((uint8_t *)rc.data, sizeof(Configuration));
 
-#ifdef LoRa_E32_DEBUG
-//	this->printParameters((Configuration *)rc.data);
-#endif
-
 	if (rc.status.code != ERR_E32_SUCCESS)
 	{
 		this->setMode(prevMode);
 		return rc;
 	}
 
-	DEBUG_PRINTLN("----------------------------------------");
-	DEBUG_PRINT(F("HEAD BIN INSIDE: "));
-	DEBUG_PRINT(((Configuration *)rc.data)->HEAD, BIN);
-	DEBUG_PRINT(" ");
-	DEBUG_PRINT(((Configuration *)rc.data)->HEAD, DEC);
-	DEBUG_PRINT(" ");
-	DEBUG_PRINTLN(((Configuration *)rc.data)->HEAD, HEX);
-	DEBUG_PRINTLN("----------------------------------------");
+	DEBUG_PRINT("----------------------------------------");
+	DEBUG_PRINT("HEAD BIN INSIDE: %u ",((Configuration *)rc.data)->HEAD);
+	DEBUG_PRINT("----------------------------------------");
 
 	rc.status.code = this->setMode(prevMode);
 	if (rc.status.code != ERR_E32_SUCCESS)
@@ -636,14 +622,9 @@ ResponseStatus LoRa_E32::setConfiguration(Configuration configuration, PROGRAM_C
 		return rc;
 	}
 
-	DEBUG_PRINTLN("----------------------------------------");
-	DEBUG_PRINT(F("HEAD BIN INSIDE: "));
-	DEBUG_PRINT(configuration.HEAD, BIN);
-	DEBUG_PRINT(" ");
-	DEBUG_PRINT(configuration.HEAD, DEC);
-	DEBUG_PRINT(" ");
-	DEBUG_PRINTLN(configuration.HEAD, HEX);
-	DEBUG_PRINTLN("----------------------------------------");
+	DEBUG_PRINT("----------------------------------------");
+	DEBUG_PRINT("HEAD BIN INSIDE: %u",configuration.HEAD, BIN);
+	DEBUG_PRINT("----------------------------------------");
 
 	rc.code = this->setMode(prevMode);
 	if (rc.code != ERR_E32_SUCCESS)
@@ -690,21 +671,10 @@ ResponseStructContainer LoRa_E32::getModuleInformation()
 		rc.status.code = ERR_E32_HEAD_NOT_RECOGNIZED;
 	}
 
-	DEBUG_PRINTLN("----------------------------------------");
-	DEBUG_PRINT(F("HEAD BIN INSIDE: "));
-	DEBUG_PRINT(moduleInformation->HEAD, BIN);
-	DEBUG_PRINT(" ");
-	DEBUG_PRINT(moduleInformation->HEAD, DEC);
-	DEBUG_PRINT(" ");
-	DEBUG_PRINTLN(moduleInformation->HEAD, HEX);
-
-	DEBUG_PRINT(F("Freq.: "));
-	DEBUG_PRINTLN(moduleInformation->frequency, HEX);
-	DEBUG_PRINT(F("Version  : "));
-	DEBUG_PRINTLN(moduleInformation->version, HEX);
-	DEBUG_PRINT(F("Features : "));
-	DEBUG_PRINTLN(moduleInformation->features, HEX);
-	DEBUG_PRINTLN("----------------------------------------");
+	DEBUG_PRINT("----------------------------------------");
+	DEBUG_PRINT("HEAD BIN INSIDE: %u",moduleInformation->HEAD);
+	DEBUG_PRINT("Freq.: %u  Version: %u  Features: %u ",moduleInformation->frequency,moduleInformation->version,moduleInformation->features);
+	DEBUG_PRINT("----------------------------------------");
 
 	rc.data = moduleInformation;
 
@@ -755,6 +725,7 @@ ResponseContainer LoRa_E32::receiveMessage()
 
 	return rc;
 }
+
 ResponseContainer LoRa_E32::receiveMessageUntil(char delimiter)
 {
 	ResponseContainer rc;
@@ -811,13 +782,11 @@ ResponseStatus LoRa_E32::sendMessage(const void *message, const uint8_t size)
 
 	return status;
 }
+
 ResponseStatus LoRa_E32::sendMessage(const String message)
 {
-	DEBUG_PRINT(F("Send message: "));
-	DEBUG_PRINT(message);
 	byte size = message.length();
-	DEBUG_PRINT(F(" size: "));
-	DEBUG_PRINTLN(size);
+	DEBUG_PRINT("Send message: %s size: %u",message.c_str(),size);
 	char messageFixed[size];
 	memcpy(messageFixed, message.c_str(), size);
 
@@ -836,6 +805,7 @@ ResponseStatus LoRa_E32::sendFixedMessage(byte ADDH, byte ADDL, byte CHAN, const
 	memcpy(messageFixed, message.c_str(), size);
 	return this->sendFixedMessage(ADDH, ADDL, CHAN, (uint8_t *)messageFixed, size);
 }
+
 ResponseStatus LoRa_E32::sendBroadcastFixedMessage(byte CHAN, const String message)
 {
 	return this->sendFixedMessage(0xFF, 0xFF, CHAN, message);

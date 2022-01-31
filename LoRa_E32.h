@@ -65,16 +65,15 @@
 
 
 // Uncomment to enable printing out nice debug messages.
-// #define LoRa_E32_DEBUG
+#define LoRa_E32_DEBUG
 
 // Define where debug output will be printed.
 
 
 // Setup debug printing macros.
 #ifdef LoRa_E32_DEBUG
-    #define DEBUG_PRINTER Serial
-	#define DEBUG_PRINT(...) { DEBUG_PRINTER.print(__VA_ARGS__); }
-	#define DEBUG_PRINTLN(...) { DEBUG_PRINTER.println(__VA_ARGS__); }
+	#define DEBUG_PRINT(format,...) ESP_LOGD("E32", format, ##__VA_ARGS__)
+	#define DEBUG_PRINTLN(format,...) ESP_LOGD("E32", format, ##__VA_ARGS__)
 #else
 	#define DEBUG_PRINT(...) {}
 	#define DEBUG_PRINTLN(...) {}

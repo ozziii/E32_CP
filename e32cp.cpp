@@ -78,7 +78,7 @@ bool e32cp::configure()
     {
         c.close();
         xSemaphoreGive(this->uar_mutex);
-        E32CP_LOGE("Get configuration code: %u", c.status.code);
+        E32CP_LOGE("Get configuration code: %s", c.status.getResponseDescription().c_str());
         return false;
     }
 
