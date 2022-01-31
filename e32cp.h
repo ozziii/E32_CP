@@ -46,7 +46,7 @@ extern "C"
 #include <ozaes.h>
 
 // Setup debug printing macros.
-#define E32CP_DEBUG
+//#define E32CP_DEBUG
 
 #ifdef E32CP_DEBUG
 #define E32CP_LOGD(format, ...)  ESP_LOGD("E32CP", format, ##__VA_ARGS__)
