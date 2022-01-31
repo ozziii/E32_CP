@@ -310,7 +310,7 @@ String e32cp::recive()
 
     if (this->_lora->available() > 0)
     {
-        ret = this->_server_recieve();
+        ret.concat(this->_server_recieve());
     }
 
     xSemaphoreGive(this->uar_mutex);
@@ -319,13 +319,14 @@ String e32cp::recive()
 
 String e32cp::_server_recieve()
 {
+    String ret = String();
 
     ResponseContainer rc = this->_lora->receiveMessage();
 
     if (rc.status.code != ERR_E32_SUCCESS)
     {
         E32CP_LOGW("Error in recive : [%s] ", rc.status.getResponseDescription().c_str());
-        return String();
+        return ret;
     }
 
     std::vector<String> command = splitString(rc.data.c_str(), E32_HANDUP_SEPARATOR_CHAR);
@@ -333,13 +334,13 @@ String e32cp::_server_recieve()
     if (command.size() < 2)
     {
         E32CP_LOGW("Error command format : [%s] ", rc.data.c_str());
-        return String();
+        return ret;
     }
 
-    if (!command[0].compareTo(E32_HANDUP_COMMAND))
+    if (!command[0].equals(E32_HANDUP_COMMAND))
     {
         E32CP_LOGW("Command unknow : [%s] ", command[0].c_str());
-        return String();
+        return ret;
     }
 
     uint16_t clientAddress = atoi(command[1].c_str());
@@ -360,7 +361,7 @@ String e32cp::_server_recieve()
     if (rs.code != ERR_E32_SUCCESS)
     {
         E32CP_LOGW("Error in send key : [%s] ", rs.getResponseDescription().c_str());
-        return String();
+        return ret;
     }
 
     RawResponseContainer CriptMessage = this->_lora->waitForReceiveRawMessage(E32_WAKE_DELAY);
@@ -368,7 +369,7 @@ String e32cp::_server_recieve()
     if (CriptMessage.status.code != ERR_E32_SUCCESS)
     {
         E32CP_LOGW("Error in recive : [%s] ", CriptMessage.status.getResponseDescription().c_str());
-        return String();
+        return ret;
     }
 
     uint8_t *message = oz_aes::decrypt_CBC(CriptMessage.data, CriptMessage.length, oneTimeKey, this->_key_length);
@@ -377,7 +378,8 @@ String e32cp::_server_recieve()
     free(CriptOneTimeKey);
     CriptMessage.close();
 
-    return String((char *)message);
+    ret.concat((char *)message);
+    return ret;
 }
 
 uint8_t *e32cp::_one_time_password()
