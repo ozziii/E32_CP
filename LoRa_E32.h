@@ -35,7 +35,7 @@
 #define LoRa_E32_h
 
 
-#define E32_LOOP_DELAY 200
+#define E32_LOOP_DELAY 50
 
 #ifndef ESP32
 	#define ACTIVATE_SOFTWARE_SERIAL
