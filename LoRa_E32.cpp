@@ -571,7 +571,7 @@ ResponseStructContainer LoRa_E32::getConfiguration()
 	rc.status.code = this->receiveStruct((uint8_t *)rc.data, sizeof(Configuration));
 
 #ifdef LoRa_E32_DEBUG
-	this->printParameters((Configuration *)rc.data);
+//	this->printParameters((Configuration *)rc.data);
 #endif
 
 	if (rc.status.code != ERR_E32_SUCCESS)

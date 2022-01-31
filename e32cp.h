@@ -49,13 +49,21 @@ extern "C"
 #define E32CP_DEBUG
 
 #ifdef E32CP_DEBUG
-#define E32CP_DEBUG_PRINTER Serial
-#define E32CP_LOGD(format, ...)                            \
-    {                                                      \
-        E32CP_DEBUG_PRINTER.printf(format, ##__VA_ARGS__); \
-    }
+#define E32CP_LOGD(format, ...)  ESP_LOGD("E32CP", format, ##__VA_ARGS__)
+#define E32CP_LOGI(format, ...)  ESP_LOGI("E32CP", format, ##__VA_ARGS__) 
+#define E32CP_LOGW(format, ...)  ESP_LOGW("E32CP", format, ##__VA_ARGS__) 
+#define E32CP_LOGE(format, ...)  ESP_LOGE("E32CP", format, ##__VA_ARGS__) 
 #else
 #define E32CP_LOGD(format, ...) \
+    {                           \
+    }
+#define E32CP_LOGI(format, ...) \
+    {                           \
+    }
+#define E32CP_LOGW(format, ...) \
+    {                           \
+    }
+#define E32CP_LOGE(format, ...) \
     {                           \
     }
 #endif
@@ -107,12 +115,12 @@ public:
 
     /**
      * @brief  Call to send command to a asleep client
-     * Send wake command to asleep client and wait for key. on Key recive send cripted payload  
+     * Send wake command to asleep client and wait for key. on Key recive send cripted payload
      * Use combined with @asleep_woke_up()
      * Normaly used by server
      *
      * Send Wake --> wait for Key --> Send cripted Payload
-     * 
+     *
      * @param address client address
      * @param payload message to send to the client
      * @return false on error
@@ -121,23 +129,23 @@ public:
     bool wake_up_asleep(String payload, uint16_t address);
 
     /**
-     * @brief After esp32 wake up send key to server and wait for payload 
+     * @brief After esp32 wake up send key to server and wait for payload
      * use compined with @wake_up_asleep(uint16_t address, uint8_t channel, String payload)
-     * Normaly used by client 
+     * Normaly used by client
      *
      * Wake by interrupt -->  Send key --> wait for payload
-     * 
+     *
      * @return String payload form server
      */
     String asleep_woke_up();
 
     /**
-     * @brief Send mesage to reciver 
-     * Normaly used by client 
-     * 
+     * @brief Send mesage to reciver
+     * Normaly used by client
+     *
      * Send Request --> wait for key --> send cripted payload
-     * 
-     * 
+     *
+     *
      * @param payload message to send to the client
      * @return false on error
      */
@@ -146,7 +154,7 @@ public:
     /**
      * @brief recive data from client call this function in loop()
      * Normaly used by server
-     * 
+     *
      * On recieve request -> send key -> recieve data
      *
      * @return String if data is avalable else empty if data not coming
