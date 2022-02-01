@@ -214,6 +214,7 @@ LoRa_E32::LoRa_E32(SoftwareSerial *serial, byte auxPin, byte m0Pin, byte m1Pin, 
 
 bool LoRa_E32::begin()
 {
+
 	if (this->auxPin != -1)
 	{
 		pinMode(this->auxPin, INPUT);
@@ -307,7 +308,7 @@ Status LoRa_E32::waitCompleteResponse(unsigned long timeout, unsigned int waitNo
 	// note you can omit using AUX if no pins are available, but you will have to use delay() to let module finish
 	if (this->auxPin != -1)
 	{
-		while (digitalRead(this->auxPin) == LOW)
+		while (digitalRead(this->auxPin) == this->_aux_transmit_state)
 		{
 			if ((millis() - t) > timeout)
 			{

@@ -224,6 +224,8 @@ class LoRa_E32 {
 
 		bool begin();
 
+
+
         Status setMode(MODE_TYPE mode);
         MODE_TYPE getMode();
 
@@ -261,6 +263,9 @@ class LoRa_E32 {
 
 		Stream * getStream(){ return this->serialDef.stream; }
 
+		void set_aux_transmit_state(bool state)	{this->_aux_transmit_state = state;	}
+		bool get_aux_transmit_state(){ return this->_aux_transmit_state;	}
+
 	private:
 		HardwareSerial* hs;
 
@@ -282,6 +287,8 @@ class LoRa_E32 {
         int8_t m1Pin = -1;
 
         UART_BPS_RATE bpsRate = UART_BPS_RATE_9600;
+
+		bool _aux_transmit_state = false;
 
 		struct NeedsStream{
   		  template< typename T >
