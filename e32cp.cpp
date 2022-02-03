@@ -231,7 +231,7 @@ String e32cp::asleep_woke_up()
 
     if(CriptMessage.length > 3  && strncmp(E32_BROADCAST_COMMAND,(const char*)CriptMessage.data,3) == 0) // ARRIVE COMMAND
     {
-        message =  (char*)CriptMessage.data[4];   
+        message = (char *)CriptMessage.data+4;   
     }
     else
     {
@@ -403,6 +403,9 @@ String e32cp::_server_recieve()
 
     if (!command[0].equals(E32_HANDUP_COMMAND))
     {
+        if (command[0].equals(E32_BROADCAST_COMMAND))
+            return command[1];
+
         E32CP_LOGW("Command unknow : [%s] ", command[0].c_str());
         return ret;
     }
