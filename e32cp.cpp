@@ -227,13 +227,22 @@ String e32cp::asleep_woke_up()
         return String();
     }
 
-    uint8_t *message = oz_aes::decrypt_CBC(CriptMessage.data, CriptMessage.length, oneTimeKey, this->_key_length);
+    char * message;
 
-    free(oneTimeKey);
-    free(CriptOneTimeKey);
+    if(CriptMessage.length > 3  && strncmp(E32_BROADCAST_COMMAND,(const char*)CriptMessage.data,3) == 0) // ARRIVE COMMAND
+    {
+        message =  (char*)CriptMessage.data[4];   
+    }
+    else
+    {
+        message = (char *)oz_aes::decrypt_CBC(CriptMessage.data, CriptMessage.length, oneTimeKey, this->_key_length);
+    }
+
+    delete oneTimeKey;
+    delete CriptOneTimeKey;
     CriptMessage.close();
 
-    return String((char *)message);
+    return String(message);
 }
 
 bool e32cp::send(String payload, uint16_t address)
@@ -294,6 +303,61 @@ bool e32cp::send(String payload, uint16_t address)
     else
     {
         E32CP_LOGD("Error in send Message : [%s] ", rs.getResponseDescription().c_str());
+        return false;
+    }
+}
+
+bool e32cp::send_broadcast_command(String message)
+{
+    if (xSemaphoreTake(this->uar_mutex, pdMS_TO_TICKS(MAX_MUTEX_DELAY_ROUTINE_ms)) == pdFALSE)
+    {
+        E32CP_LOGE("Error in get mutex");
+        return false;
+    }
+
+    Status mode = this->_lora->setMode(MODE_1_WAKE_UP);
+
+    if (mode != ERR_E32_SUCCESS)
+    {
+        xSemaphoreGive(this->uar_mutex);
+        E32CP_LOGW("Error in set Mode WAKE UP \r\n");
+        return false;
+    }
+
+    ResponseStatus rs = this->_lora->sendBroadcastFixedMessage(this->_channel, E32_WAKE_COMMAND);
+
+    if (rs.code != ERR_E32_SUCCESS)
+    {
+        xSemaphoreGive(this->uar_mutex);
+        E32CP_LOGW("Error in send Wake: %s \n", rs.getResponseDescription().c_str());
+        return false;
+    }
+
+    E32CP_LOGI("Wake Send boadcast to channel: %u \n" this->_channel);
+
+    delay(2000);
+
+    mode = this->_lora->setMode(MODE_0_NORMAL);
+
+    if (mode != ERR_E32_SUCCESS)
+    {
+        xSemaphoreGive(this->uar_mutex);
+        E32CP_LOGW("Error in set Mode NORMAL \r\n");
+        return false;
+    }
+
+    ResponseStatus rs = this->_lora->sendBroadcastFixedMessage(this->_channel, E32_BROADCAST_COMMAND + char(E32_HANDUP_SEPARATOR_CHAR) + message);
+
+    xSemaphoreGive(this->uar_mutex);
+
+    if (rs.code == ERR_E32_SUCCESS)
+    {
+        E32CP_LOGD("Send Broadcast Message Cannel: %u \n", this->_channel);
+        return true;
+    }
+    else
+    {
+        E32CP_LOGD("Error in send Broadcast Mesage  Cannel: %u  \n", this->_channel);
         return false;
     }
 }

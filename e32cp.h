@@ -71,10 +71,12 @@ extern "C"
 // SERVER ADDRESS
 #define E32_SERVER_ADDRESS 0
 #define E32_SERVER_CHANNEL 3
+#define E32_BROADCAST_COMMAND "cmd"
 #define E32_WAKE_COMMAND "wake"
 #define E32_HANDUP_COMMAND "hup"
 #define E32_HANDUP_SEPARATOR_CHAR 47
 #define E32_WAKE_DELAY 4000
+#define E32_BROADCAST_ADDRESS 65535
 
 typedef struct
 {
@@ -151,6 +153,24 @@ public:
      */
     bool send(String payload, uint16_t address = E32_SERVER_ADDRESS);
 
+
+
+
+    /**
+     * @brief  send uncripted message to all client in channel
+     * 
+     * 
+     * @param message 
+     * @return true 
+     * @return false 
+     */
+    bool send_broadcast_command(String message);
+
+
+
+
+
+
     /**
      * @brief recive data from client call this function in loop()
      * Normaly used by server
@@ -160,6 +180,10 @@ public:
      * @return String if data is avalable else empty if data not coming
      */
     String recive();
+
+
+
+
 
 private:
     String _server_recieve();
