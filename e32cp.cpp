@@ -333,6 +333,7 @@ bool e32cp::send_broadcast_command(String message)
         return false;
     }
 
+
     E32CP_LOGI("Wake Send boadcast to channel: %u \n" this->_channel);
 
     delay(2000);
@@ -346,7 +347,7 @@ bool e32cp::send_broadcast_command(String message)
         return false;
     }
 
-    ResponseStatus rs = this->_lora->sendBroadcastFixedMessage(this->_channel, E32_BROADCAST_COMMAND + char(E32_HANDUP_SEPARATOR_CHAR) + message);
+    rs = this->_lora->sendBroadcastFixedMessage(this->_channel, E32_BROADCAST_COMMAND + char(E32_HANDUP_SEPARATOR_CHAR) + message);
 
     xSemaphoreGive(this->uar_mutex);
 
