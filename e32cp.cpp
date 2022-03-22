@@ -284,6 +284,8 @@ bool e32cp::send(String payload, uint16_t address)
         xSemaphoreGive(this->uar_mutex);
         return false;
     }
+    E32CP_LOGD("Recive key ok");
+
 
     uint8_t *oneTimeKey = oz_aes::decrypt_CBC(CriptedKey.data, CriptedKey.length, (uint8_t *)this->_pre_shared_key, this->_key_length);
 
@@ -334,7 +336,7 @@ bool e32cp::send_broadcast_command(String message)
     }
 
 
-    E32CP_LOGI("Wake Send boadcast to channel: %u \n" this->_channel);
+    E32CP_LOGI("Wake Send boadcast to channel: %u \n", this->_channel);
 
     delay(2000);
 
