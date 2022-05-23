@@ -134,7 +134,7 @@ String e32cp::_response_handup(e32_receve_struct_t header)
         return String();
     }
 
-    e32_receve_struct_t cry_message = this->_config.lora->receve(E32_MESSAGE_DELAY);
+    e32_receve_struct_t cry_message = this->_config.lora->receve(pdMS_TO_TICKS(E32_MESSAGE_DELAY));
 
     if (cry_message.size == 0)
     {
@@ -243,7 +243,7 @@ e32cp_errno_t e32cp::_send(e32_mode_t mode, String payload, uint16_t address, ui
     else
         timetoWait = E32_MESSAGE_DELAY;
 
-    auto cript_key = this->_config.lora->receve(timetoWait);
+    auto cript_key = this->_config.lora->receve(pdMS_TO_TICKS(timetoWait));
 
     if (cript_key.size == 0)
     {
