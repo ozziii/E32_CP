@@ -98,7 +98,7 @@ String e32cp::_response_handup(e32_receve_struct_t header)
 
     uint8_t addH = *(header.buffer + 1);
     uint8_t addL = *(header.buffer + 2);
-    uint8_t address = addH * 256 + addL;
+    uint8_t address = ((uint16_t)addH << 8) | addL;
     uint8_t channel = *(header.buffer + 3);
     free(header.buffer);
 

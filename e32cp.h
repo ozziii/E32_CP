@@ -76,6 +76,7 @@ public:
      */
     e32cp_errno_t begin(e32cp_config_t config);
 
+
     /**
      * @brief  Call to send command to a asleep client
      * Send wake command to asleep client and wait for key. on Key recive send cripted payload
