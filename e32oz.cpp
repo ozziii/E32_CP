@@ -396,7 +396,7 @@ int e32oz::_timing_read(uint8_t *buffer, size_t len, TickType_t xTicksToWait)
         do
         {
             (*buffer_pointer) = c;
-            //ESP_LOGD("R","-->[%X]",c);
+            //ESP_LOGV("R","-->[%X]",c);
             buffer_pointer++;
             size++;
         } while (uart_read_bytes(this->_uart_num, &c,1,10) && size < len);

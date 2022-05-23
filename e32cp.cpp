@@ -19,6 +19,15 @@ e32cp_errno_t e32cp::begin(e32cp_config_t config)
 
 e32cp_errno_t e32cp::wake_up_asleep(String payload, uint16_t address, uint8_t channel)
 {
+    uint8_t max_message_size = 32;
+
+    if(this->_config.key_length == 24 || this->_config.key_length == 16)
+        max_message_size = 48;
+
+    if(payload.length() >  max_message_size)
+        return E32CP_ERR_MESSAGE_SIZE;
+
+
     e32cp_errno_t err;
     uint8_t count = E32CP_SEND_TRY_TIME;
 
@@ -46,6 +55,15 @@ String e32cp::asleep_woke_up()
 
 e32cp_errno_t e32cp::send(String payload, uint16_t address, uint8_t channel)
 {
+    uint8_t max_message_size = 32;
+
+    if(this->_config.key_length == 24 || this->_config.key_length == 16)
+        max_message_size = 48;
+
+    if(payload.length() >  max_message_size)
+        return E32CP_ERR_MESSAGE_SIZE;
+
+
     e32cp_errno_t err;
     uint8_t count = E32CP_SEND_TRY_TIME;
 
@@ -98,9 +116,11 @@ String e32cp::_response_handup(e32_receve_struct_t header)
 
     uint8_t addH = *(header.buffer + 1);
     uint8_t addL = *(header.buffer + 2);
-    uint8_t address = ((uint16_t)addH << 8) | addL;
+    uint16_t address = ((uint16_t)addH << 8) | addL;
     uint8_t channel = *(header.buffer + 3);
     free(header.buffer);
+
+    ESP_LOGV(TAG,"Reveve Handup from H:[%u] C:[%u]",address,channel);
 
     uint8_t *one_time_key = this->_one_time_password();
 
@@ -134,7 +154,7 @@ String e32cp::_response_handup(e32_receve_struct_t header)
         return String();
     }
 
-    e32_receve_struct_t cry_message = this->_config.lora->receve(pdMS_TO_TICKS(E32_MESSAGE_DELAY));
+    e32_receve_struct_t cry_message = this->_config.lora->receve(pdMS_TO_TICKS(E32_MESSAGE_DELAY*3));
 
     if (cry_message.size == 0)
     {
