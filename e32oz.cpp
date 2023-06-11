@@ -67,7 +67,7 @@ e32_errno_t e32oz::_begin(uint8_t uart_num, e32_pin_t pin)
         return E32_ERR_UART;
 
     // Set UART pins (using UART0 default pins ie no changes.)
-    if (uart_set_pin(this->_uart_num, GPIO_NUM_17, GPIO_NUM_16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE) != ESP_OK)
+    if (uart_set_pin(this->_uart_num, pin.Tx, pin.Rx, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE) != ESP_OK)
         return E32_ERR_UART;
 
     // Install UART driver, and get the queue.
